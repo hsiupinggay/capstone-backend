@@ -14,7 +14,7 @@ const mongoose = require('mongoose');
  * ========================================================
  *
  *             Schema describing structure of
- *             documents for users collection
+ *             documents for patients collection
  *
  * ========================================================
  * ========================================================
@@ -24,47 +24,65 @@ const { Schema } = mongoose;
 const patientSchema = new Schema(
   {
     identity: {
-      name: { first: String, last: String },
+      name: {
+        first: String,
+        last: String,
+      },
       photo: String,
       dob: Date,
     },
-    visit: {
-      chaperones: [String],
+    visitDetails: {
+      chaperones: [{
+        // If not a user, then this field won't exist
+        chaperoneId: mongoose.Schema.Types.ObjectId,
+        name: String,
+      }],
       clinics: [{
         hospital: String,
-        department: [String],
+        departments: [String],
       }],
+      doctors: [String],
     },
-    appointments: [
-      {
+    appointments: [{
+      date: Date,
+      time: String,
+      hospital: {
+        name: String,
+        department: String,
+      },
+      chaperone: {
+        // If not a user, then this field won't exist
+        chaperoneId: mongoose.Schema.Types.ObjectId,
+        name: String,
+      },
+      notes: [{
+        userImage: String,
+        userName: String,
         date: Date,
         time: String,
-        hospital: {
-          name: String,
-          department: String,
-        },
-        notes: [{
-          userImage: String,
-          userName: String,
-          date: Date,
-          time: String,
-          note: String,
-          image: String,
-        },
-        ],
-      },
-    ],
+        note: String,
+        image: String,
+      }],
+    }],
     medication: [{
       name: String,
-      frequency: { times: Number, perDuration: String, perDosage: Number },
+      frequency: {
+        times: Number,
+        perDuration: String,
+        perDosage: Number,
+      },
       lastIssued: {
         date: Date,
         durationDays: Number,
       },
-      emailList: [{
-        name: String,
-        email: String,
-      }],
+      reminder: {
+        daysBefore: Number,
+        nextIssueReminder: Date,
+      },
+    }],
+    medEmailList: [{
+      name: String,
+      email: String,
     }],
   },
   {

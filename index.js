@@ -2,14 +2,13 @@
  * ========================================================
  * ========================================================
  *
- *                       consts
+ *                   Required modules
  *
  * ========================================================
  * ========================================================
  */
 const express = require('express');
 const cors = require('cors');
-const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
@@ -30,10 +29,10 @@ app.use(cors({
   credentials: true,
   origin: FRONTEND_URL,
 }));
-// Bind cookie parser middleware to parse cookies in requests
-app.use(cookieParser());
 // Bind Express middleware to parse JSON request bodies
 app.use(express.json());
+// Bind Express middleware to parse request bodies for POST requests
+app.use(express.urlencoded({ extended: false }));
 // Expose the files stored in the public folder
 app.use(express.static('public'));
 
@@ -47,23 +46,23 @@ app.use(express.static('public'));
  * ========================================================
  */
 
-// const routes
+// Require routers
 const userRouter = require('./routers/userRouter');
 const patientRouter = require('./routers/patientRouter');
 
-// const controllers
+// Require controllers
 const UserController = require('./controllers/userController');
 const PatientController = require('./controllers/patientController');
 
-// const models
+// Require models
 const UserModel = require('./models/userModel');
 const PatientModel = require('./models/patientModel');
 
-// initialise controllers
+// Initialise controllers
 const userController = new UserController(UserModel);
 const patientController = new PatientController(PatientModel);
 
-// set up routes
+// Set up routes
 app.use('/user', userRouter(userController));
 app.use('/patient', patientRouter(patientController));
 
@@ -78,6 +77,7 @@ app.use('/patient', patientRouter(patientController));
  */
 const uri = process.env.MONGODB_URI;
 const PORT = process.env.PORT || 3004;
+
 // Only connect to port after connecting to db
 mongoose.connect(uri)
   .then(() => {
