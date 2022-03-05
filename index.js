@@ -1,0 +1,88 @@
+/*
+ * ========================================================
+ * ========================================================
+ *
+ *                       consts
+ *
+ * ========================================================
+ * ========================================================
+ */
+const express = require('express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const mongoose = require('mongoose');
+require('dotenv').config();
+
+/*
+* ========================================================
+* ========================================================
+*
+*                    Server middleware
+*
+* ========================================================
+* ========================================================
+*/
+// Initialise Express instance
+const app = express();
+// Set CORS headers
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+app.use(cors({
+  credentials: true,
+  origin: FRONTEND_URL,
+}));
+// Bind cookie parser middleware to parse cookies in requests
+app.use(cookieParser());
+// Bind Express middleware to parse JSON request bodies
+app.use(express.json());
+// Expose the files stored in the public folder
+app.use(express.static('public'));
+
+/*
+ * ========================================================
+ * ========================================================
+ *
+ *                  Routes + Controllers
+ *
+ * ========================================================
+ * ========================================================
+ */
+
+// const routes
+const userRouter = require('./routers/userRouter');
+const patientRouter = require('./routers/patientRouter');
+
+// const controllers
+const UserController = require('./controllers/userController');
+const PatientController = require('./controllers/patientController');
+
+// const models
+const UserModel = require('./models/userModel');
+const PatientModel = require('./models/patientModel');
+
+// initialise controllers
+const userController = new UserController(UserModel);
+const patientController = new PatientController(PatientModel);
+
+// set up routes
+app.use('/user', userRouter(userController));
+app.use('/patient', patientRouter(patientController));
+
+/*
+ * ========================================================
+ * ========================================================
+ *
+ *        Set Express to listen on the given port
+ *
+ * ========================================================
+ * ========================================================
+ */
+const uri = process.env.MONGODB_URI;
+const PORT = process.env.PORT || 3004;
+// Only connect to port after connecting to db
+mongoose.connect(uri)
+  .then(() => {
+    app.listen(PORT);
+    console.log(`connected to port ${PORT}`);
+    console.log('connected to db');
+  })
+  .catch((err) => console.log(err));

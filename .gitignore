@@ -1,0 +1,9 @@
+.env
+
+# File that sometimes appears on MacOS
+.DS_Store
+
+# Dependency directories
+node_modules/
+
+public/uploads/*
