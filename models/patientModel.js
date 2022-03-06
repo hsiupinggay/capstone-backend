@@ -73,11 +73,11 @@ const patientSchema = new Schema(
       },
       lastIssued: {
         date: Date,
-        durationDays: Number,
+        noOfPills: Number,
       },
-      reminder: {
+      remainder: {
         daysBefore: Number,
-        nextIssueReminder: Date,
+        nextIssueDate: Date,
       },
     }],
     medEmailList: [{

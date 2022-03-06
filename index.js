@@ -57,6 +57,7 @@ const PatientController = require('./controllers/patientController');
 // Require models
 const UserModel = require('./models/userModel');
 const PatientModel = require('./models/patientModel');
+const familyRequestModel = require('./models/familyRequestModel');
 
 // Initialise controllers
 const userController = new UserController(UserModel);
