@@ -61,7 +61,7 @@ const familyRequestModel = require('./models/familyRequestModel');
 
 // Initialise controllers
 const userController = new UserController(UserModel);
-const patientController = new PatientController(PatientModel);
+const patientController = new PatientController(PatientModel, UserModel);
 
 // Set up routes
 app.use('/user', userRouter(userController));

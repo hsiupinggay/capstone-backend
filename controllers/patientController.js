@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /*
  * ========================================================
  * ========================================================
@@ -7,9 +8,9 @@
  * ========================================================
  * ========================================================
  */
+const { DateTime } = require('luxon');
 const BaseController = require('./baseController');
-
-require('dotenv').config();
+// require('dotenv').config();
 
 /*
  * ========================================================
@@ -21,34 +22,68 @@ require('dotenv').config();
  * ========================================================
  */
 class PatientController extends BaseController {
-  constructor(model) {
+  constructor(model, userModel) {
     super(model);
+    this.userModel = userModel;
   }
 
-  async foo(req, res) {
-    console.log('GET Request: BACKEND_URL/patient/foo');
+  // Get data for all patients related to user
+  async allPatientsList(req, res) {
+    const { userId } = req.query;
+
+    try {
+      // Find user's document and return patients details
+      const allPatientsObj = await this.userModel.findOne({ _id: userId }, { patients: 1 });
+
+      // Extract patient ids from object
+      const allPatientsArr = allPatientsObj.patients;
+      const patientIdArr = [];
+      for (let i = 0; i < allPatientsArr.length; i += 1) {
+        patientIdArr.push(allPatientsArr[i].patientId);
+      }
+
+      // Get patients details to send to frontend
+      const patientDetailsObj = await this.model.find({ _id: { $in: patientIdArr } }, { 'identity.name': 1, 'visitDetails.chaperones': 1, 'visitDetails.clinics': 1 });
+      console.log('patientDetailsObj', patientDetailsObj);
+
+      return res.status(200).json({ patientDetailsObj });
+    } catch (err) {
+      return this.errorHandler(err, res);
+    }
   }
 
-  async add(req, res) {
-    console.log('POST Request: BACKEND_URL/patient/add');
-
+  // Add new appointment to DB
+  async addAppointment(req, res) {
     const {
-      firstName, lastName, dob, photo,
+      patientId, dateTime, department, hospital, chaperone, chaperoneId,
     } = req.body;
 
-    // create new patient
-    await this.model.create({
-      identity: {
-        name: {
-          first: firstName,
-          last: lastName,
-        },
-        photo,
-        dob,
-      },
-    });
+    try {
+      // Format date and time
+      const date = DateTime.fromISO(dateTime).toFormat('dd-MMM-yyyy');
+      const time = DateTime.fromISO(dateTime).toFormat('h:mm a');
 
-    res.status(200).json({ addSuccess: true });
+      // Find patient's document
+      const patient = await this.model.findOne({ _id: patientId });
+
+      patient.appointments.push({
+        date,
+        time,
+        hospital: {
+          name: hospital,
+          department,
+        },
+        chaperone: {
+          chaperoneId,
+          name: chaperone,
+        },
+      });
+      patient.save();
+
+      return res.status(200).json({ data: patient.appointments });
+    } catch (err) {
+      return this.errorHandler(err, res);
+    }
   }
 }
 
