@@ -67,18 +67,29 @@ class PatientController extends BaseController {
       // Find patient's document
       const patient = await this.model.findOne({ _id: patientId });
 
-      patient.appointments.push({
-        date,
-        time,
-        hospital: {
-          name: hospital,
-          department,
-        },
-        chaperone: {
-          chaperoneId,
-          name: chaperone,
-        },
-      });
+      if (chaperone === '') {
+        patient.appointments.push({
+          date,
+          time,
+          hospital: {
+            name: hospital,
+            department,
+          },
+        });
+      } else {
+        patient.appointments.push({
+          date,
+          time,
+          hospital: {
+            name: hospital,
+            department,
+          },
+          chaperone: {
+            chaperoneId,
+            name: chaperone,
+          },
+        });
+      }
       patient.save();
 
       return res.status(200).json({ data: patient.appointments });
