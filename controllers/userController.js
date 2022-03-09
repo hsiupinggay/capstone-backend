@@ -30,24 +30,65 @@ class UserController extends BaseController {
 
   async login(req, res) {
     console.log(`POST Request: ${BACKEND_URL}/user/login`);
-    const { email: userEmail, password } = req.body;
-    const hash = await argon2.hash(password, ARGON_SALT);
 
-    const user = await this.model.find({ 'identity.email': userEmail }).select({ identity: 1 });
-    console.log('<== user found ==>', user);
+    const {
+      email: inputEmail,
+      password: inputPassword,
+    } = req.body;
+
+    const user = await this.model.find({
+      'identity.email': inputEmail,
+    }).select({ identity: 1 });
+
+    console.log('<== user ==>', user);
+
+    // If user email not found, returns an empty array
+    if (user.length === 0) {
+      console.log('<== user not found ==>');
+
+      this.errorHandler(res, 400, {
+        loginSuccess: false,
+        error: 'Incorrect email or password',
+      });
+    }
+
+    // If user email found
+    const {
+      email,
+      name,
+      password: dbPassword,
+    } = user[0].identity;
+    const { _id: id } = user[0];
+
     try {
-      const verify = await argon2.verify(user.identity.password, hash);
+      // Verify password
+      const verify = await argon2.verify(dbPassword, inputPassword);
+
+      // If password is verified:
+      // Sign JWT, send token with payload to FE
+      // If password is incorrect:
+      // Send error status
+
       if (verify) {
-        const { email, name } = user.identity;
-        const { _id: id } = user;
-        const payload = { id, email };
+        const payload = { id, email, name };
         const token = jwt.sign(payload, JWT_SALT, { expiresIn: '10h' });
-        res.status(200).json({
-          loginSuccess: true, token, payload, id, name,
+
+        this.successHandler(res, 200, {
+          loginSuccess: true,
+          token,
+          payload,
+        });
+      } if (!verify) {
+        return this.errorHandler(res, 400, {
+          loginSuccess: false,
+          error: 'Incorrect email or password',
         });
       }
     } catch (err) {
-      this.errorHandler(err, res);
+      this.errorHandler(res, 400, {
+        loginSuccess: false,
+        error: 'Incorrect email or password',
+      });
     }
   }
 
@@ -63,7 +104,7 @@ class UserController extends BaseController {
 
     try {
       // Hash password with Argon2
-      const hash = await argon2.hash(password, ARGON_SALT);
+      const hash = await argon2.hash(password);
       console.log('<== Ar Hashed ==>', hash);
 
       // Add user to DB
@@ -80,9 +121,21 @@ class UserController extends BaseController {
 
       console.log('<== new user ==>', newUser);
     } catch (err) {
-      this.errorHandler(err, res);
+      this.errorHandler(res, 400, {
+        loginSuccess: false,
+        error: 'Unsuccessful Signup. Please try again.',
+      });
     }
-    return res.status(200).json({ signupSucess: true });
+    return this.successHandler(res, 200, {
+      signupSuccess: true,
+    });
+  }
+
+  async editProfile(req, res) {
+    console.log(`PUT Request: ${BACKEND_URL}/user/profile`);
+    this.successHandler(res, 200, {
+      editSuccess: true,
+    });
   }
 }
 

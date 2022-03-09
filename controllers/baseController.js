@@ -14,9 +14,14 @@ class BaseController {
     this.model = model;
   }
 
-  errorHandler(err, res) {
+  successHandler(res, status, payload) {
+    console.log('Payload', payload);
+    res.status(status).json(payload);
+  }
+
+  errorHandler(res, status, err) {
     console.error('Error', err);
-    res.send(err);
+    res.status(status).json(err);
   }
 }
 
