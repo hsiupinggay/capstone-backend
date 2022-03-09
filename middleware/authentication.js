@@ -1,9 +1,10 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-console.log(require('crypto').randomBytes(64).toString('hex'));
-
 const { JWT_SALT } = process.env;
+
+// Authentication Middleware to be imported in routers
+// Receives headers sent by FE and verifies
 
 const authToken = () => (req, res, next) => {
   console.log('<== req.headers ==>', req.headers);
