@@ -44,7 +44,7 @@ const patientSchema = new Schema(
       doctors: [String],
     },
     appointments: [{
-      date: Date,
+      date: String,
       time: String,
       hospital: {
         name: String,

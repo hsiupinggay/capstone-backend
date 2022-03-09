@@ -18,15 +18,15 @@ const router = express.Router();
  * ========================================================
  * ========================================================
  *
- *            patient router with various paths
+ *            Patient router with various paths
  *
  * ========================================================
  * ========================================================
  */
-
 module.exports = function patientRouter(controller) {
-  // test routes
-  router.get('/foo', controller.foo.bind(controller));
-  router.post('/add', controller.add.bind(controller));
+  // Get list of all patient data related to user
+  router.get('/all-patients-list', controller.allPatientsList.bind(controller));
+  // Add new appointment
+  router.post('/add-appointment', controller.addAppointment.bind(controller));
   return router;
 };
