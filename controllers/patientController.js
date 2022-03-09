@@ -62,7 +62,8 @@ class PatientController extends BaseController {
       // Format date and time
       const date = DateTime.fromISO(dateTime).toFormat('dd-MMM-yyyy');
       const time = DateTime.fromISO(dateTime).toFormat('h:mm a');
-
+      console.log('date', date);
+      console.log('dateTime', dateTime);
       // Find patient's document
       const patient = await this.model.findOne({ _id: patientId });
 
