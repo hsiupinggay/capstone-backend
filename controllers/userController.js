@@ -162,7 +162,8 @@ class UserController extends BaseController {
     } catch (err) {
       return res.status(403).redirect('/');
     }
-    
+  }
+
   // Find family members linked to user
   async findFamily(req, res) {
     const {
