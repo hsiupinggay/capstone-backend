@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 /* eslint-disable consistent-return */
 /* eslint-disable no-console */
 /* eslint-disable no-useless-constructor */
@@ -138,6 +139,19 @@ class UserController extends BaseController {
     console.log(`PUT Request: ${BACKEND_URL}/user/profile`);
     this.successHandler(res, 200, {
       editSuccess: true,
+    });
+  }
+
+  // Find family members linked to user
+  async findFamily(req, res) {
+    const {
+      userId,
+    } = req.query;
+
+    const user = await this.model.findOne({ _id: userId });
+    const familyMembers = user.family;
+    return this.successHandler(res, 200, {
+      data: familyMembers,
     });
   }
 }

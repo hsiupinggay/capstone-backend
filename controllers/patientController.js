@@ -44,7 +44,6 @@ class PatientController extends BaseController {
 
       // Get patients details to send to frontend
       const patientDetailsObj = await this.model.find({ _id: { $in: patientIdArr } }, { 'identity.name': 1, 'visitDetails.chaperones': 1, 'visitDetails.clinics': 1 });
-      console.log('patientDetailsObj', patientDetailsObj);
 
       return res.status(200).json({ patientDetailsObj });
     } catch (err) {
@@ -62,8 +61,6 @@ class PatientController extends BaseController {
       // Format date and time
       const date = DateTime.fromISO(dateTime).toFormat('dd-MMM-yyyy');
       const time = DateTime.fromISO(dateTime).toFormat('h:mm a');
-      console.log('date', date);
-      console.log('dateTime', dateTime);
       // Find patient's document
       const patient = await this.model.findOne({ _id: patientId });
 
@@ -148,7 +145,6 @@ class PatientController extends BaseController {
       patient.visitDetails.clinics.push({
         hospital,
       });
-      console.log(patient);
       patient.save();
 
       return res.status(200).json({ message: 'success' });
@@ -176,7 +172,6 @@ class PatientController extends BaseController {
           clinicsArr[i].departments.push(department);
         }
       }
-      console.log(patient);
       patient.save();
 
       return res.status(200).json({ message: 'success' });
@@ -210,8 +205,7 @@ class PatientController extends BaseController {
           chaperoneId,
         });
       }
-      console.log(patient);
-      // patient.save();
+      patient.save();
 
       return res.status(200).json({ message: 'success' });
     } catch (err) {
