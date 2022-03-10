@@ -29,7 +29,7 @@ const patientSchema = new Schema(
         last: String,
       },
       photo: String,
-      dob: Date,
+      dob: String,
     },
     visitDetails: {
       chaperones: [{
