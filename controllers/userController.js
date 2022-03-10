@@ -1,3 +1,6 @@
+/* eslint-disable consistent-return */
+/* eslint-disable no-console */
+/* eslint-disable no-useless-constructor */
 /*
  * ========================================================
  * ========================================================
