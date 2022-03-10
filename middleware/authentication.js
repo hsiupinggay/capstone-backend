@@ -10,11 +10,15 @@ const authToken = () => (req, res, next) => {
   console.log('<== req.headers ==>', req.headers);
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
-    if (token == null) return res.status(401).redirect('/');
-    jwt.verify(token, JWT_SALT);
+    console.log('<== authHeader ==>', authHeader);
 
-    console.log('<== Token Verified ==>');
+    const token = authHeader && authHeader.split(' ')[1];
+    console.log('<== token ==>', token);
+    if (token == null) return res.status(401).redirect('/');
+    const verify = jwt.verify(token, JWT_SALT);
+
+    console.log('<== Token Verified ==>', verify);
+    res.status(200).json({ verified: true });
     next();
   } catch (err) {
     return res.send(403).redirect('/');

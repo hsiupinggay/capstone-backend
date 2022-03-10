@@ -9,6 +9,7 @@
  */
 const argon2 = require('argon2');
 const jwt = require('jsonwebtoken');
+const authToken = require('../middleware/authentication');
 const BaseController = require('./baseController');
 require('dotenv').config();
 
@@ -136,6 +137,27 @@ class UserController extends BaseController {
     this.successHandler(res, 200, {
       editSuccess: true,
     });
+  }
+
+  async authenticate(req, res) {
+    console.log(`GET Request: ${BACKEND_URL}/user/auth`);
+    console.log('<== req.headers ==>', req.headers);
+    try {
+      const authHeader = req.headers.authorization;
+      console.log('<== authHeader ==>', authHeader);
+
+      const token = authHeader && authHeader.split(' ')[1];
+      console.log('<== token ==>', token);
+      if (token == null) return res.status(401).redirect('/');
+      const verify = jwt.verify(token, JWT_SALT);
+
+      console.log('<== Token Verified ==>', verify);
+      this.successHandler(res, 200, {
+        verified: true,
+      });
+    } catch (err) {
+      return res.status(403).redirect('/');
+    }
   }
 }
 

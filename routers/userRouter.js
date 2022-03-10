@@ -29,5 +29,6 @@ module.exports = function userRouter(controller) {
   router.post('/login', controller.login.bind(controller));
   router.post('/signup', controller.signup.bind(controller));
   router.put('/profile', authToken(), controller.editProfile.bind(controller));
+  router.get('/authenticate', controller.authenticate.bind(controller));
   return router;
 };
