@@ -1,5 +1,4 @@
 /* eslint-disable no-underscore-dangle */
-/* eslint-disable no-console */
 /*
  * ========================================================
  * ========================================================
@@ -45,9 +44,9 @@ class PatientController extends BaseController {
       // Get patients details to send to frontend
       const patientDetailsObj = await this.model.find({ _id: { $in: patientIdArr } }, { 'identity.name': 1, 'visitDetails.chaperones': 1, 'visitDetails.clinics': 1 });
 
-      return res.status(200).json({ patientDetailsObj });
+      return this.successHandler(res, 200, { patientDetailsObj });
     } catch (err) {
-      return this.errorHandler(err, res);
+      return this.errorHandler(res, 400, { err });
     }
   }
 
@@ -89,9 +88,9 @@ class PatientController extends BaseController {
       }
       patient.save();
 
-      return res.status(200).json({ data: patient.appointments });
+      return this.successHandler(res, 200, { data: patient.appointments });
     } catch (err) {
-      return this.errorHandler(err, res);
+      return this.errorHandler(res, 400, { err });
     }
   }
 
@@ -123,9 +122,9 @@ class PatientController extends BaseController {
       });
       user.save();
 
-      return res.status(200).json({ message: 'success' });
+      return this.successHandler(res, 200, { message: 'success' });
     } catch (err) {
-      return this.errorHandler(err, res);
+      return this.errorHandler(res, 400, { err });
     }
   }
 
@@ -147,9 +146,9 @@ class PatientController extends BaseController {
       });
       patient.save();
 
-      return res.status(200).json({ message: 'success' });
+      return this.successHandler(res, 200, { message: 'success' });
     } catch (err) {
-      return this.errorHandler(err, res);
+      return this.errorHandler(res, 400, { err });
     }
   }
 
@@ -174,9 +173,9 @@ class PatientController extends BaseController {
       }
       patient.save();
 
-      return res.status(200).json({ message: 'success' });
+      return this.successHandler(res, 200, { message: 'success' });
     } catch (err) {
-      return this.errorHandler(err, res);
+      return this.errorHandler(res, 400, { err });
     }
   }
 
@@ -207,9 +206,9 @@ class PatientController extends BaseController {
       }
       patient.save();
 
-      return res.status(200).json({ message: 'success' });
+      return this.successHandler(res, 200, { message: 'success' });
     } catch (err) {
-      return this.errorHandler(err, res);
+      return this.errorHandler(res, 400, { err });
     }
   }
 }
