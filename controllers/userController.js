@@ -195,12 +195,13 @@ class UserController extends BaseController {
     const {
       userId,
     } = req.query;
-
-    const user = await this.model.findOne({ _id: userId });
-    const familyMembers = user.family;
-    return this.successHandler(res, 200, {
-      data: familyMembers,
-    });
+    try {
+      const user = await this.model.findOne({ _id: userId });
+      const familyMembers = user.family;
+      return this.successHandler(res, 200, { data: familyMembers });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
   }
 
   // Upload or change photo
