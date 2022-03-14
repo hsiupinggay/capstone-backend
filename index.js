@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /*
  * ========================================================
  * ========================================================
@@ -58,12 +59,12 @@ const ContactsController = require('./controllers/contactsController');
 // Require models
 const UserModel = require('./models/userModel');
 const PatientModel = require('./models/patientModel');
-const familyRequestModel = require('./models/familyRequestModel');
+const ContactRequestModel = require('./models/contactRequestModel');
 
 // Initialise controllers
 const userController = new UserController(UserModel);
 const patientController = new PatientController(PatientModel, UserModel);
-const contactsController = new ContactsController(UserModel, PatientModel, familyRequestModel);
+const contactsController = new ContactsController(UserModel, PatientModel, ContactRequestModel);
 
 // Set up routes
 app.use('/user', userRouter(userController));

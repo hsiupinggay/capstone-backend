@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /* eslint-disable max-len */
 /* eslint-disable no-underscore-dangle */
 /*
@@ -21,197 +22,44 @@ const BaseController = require('./baseController');
  * ========================================================
  */
 class ContactsController extends BaseController {
-  constructor(model, patientModel, familyRequestModel) {
+  constructor(model, patientModel, contactRequestModel) {
     super(model);
     this.patientModel = patientModel;
-    this.familyRequestModel = familyRequestModel;
+    this.contactRequestModel = contactRequestModel;
   }
 
-  // Get data for all patients related to user
+  // Get data for all contacts related to user, outgoing and incoming requests & responses
   async loadPage(req, res) {
     const { userId } = req.query;
-
+    console.log(userId);
     try {
-      // // Find user's document and return patients details
-      // const allPatientsObj = await this.userModel.findOne({ _id: userId }, { patients: 1 });
+      // Find all user's contacts
+      const allContacts = await this.model.findOne({ _id: userId }, { contacts: 1 });
+      console.log('allContacts', allContacts);
 
-      // // Extract patient ids from object
-      // const allPatientsArr = allPatientsObj.patients;
-      // const patientIdArr = [];
-      // for (let i = 0; i < allPatientsArr.length; i += 1) {
-      //   patientIdArr.push(allPatientsArr[i].patientId);
-      // }
+      // Find incoming requests
+      const incomingRequests = await this.contactRequestModel.find({ 'recipient.recipientId': userId, hasAccepted: { $exists: false } }, { sender: 1 });
+      console.log('===========INCOMING REQ=======', incomingRequests);
 
-      // // Get patients details to send to frontend
-      // const patientDetailsObj = await this.model.find({ _id: { $in: patientIdArr } }, { 'identity.name': 1, 'visitDetails.chaperones': 1, 'visitDetails.clinics': 1 });
+      // Find pending outgoing requests
+      const outgoingRequestsPending = await this.contactRequestModel.find({ 'sender.senderId': userId, hasAccepted: { $exists: false } }, { recipient: 1 });
+      console.log('===========OUTGOING PENDING=======', outgoingRequestsPending);
 
-      // return this.successHandler(res, 200, { patientDetailsObj });
+      // Find rejected outgoing requests
+      const outgoingRequestsRejected = await this.contactRequestModel.find({ 'sender.senderId': userId, hasAccepted: false }, { recipient: 1 });
+      console.log('===========OUTGOING REJECTED=======', outgoingRequestsRejected);
+
+      // Find accepted outgoing requests
+      const outgoingRequestsAccepted = await this.contactRequestModel.find({ 'sender.senderId': userId, hasAccepted: true }, { recipient: 1 });
+      console.log('===========OUTGOING ACCEPTED=======', outgoingRequestsAccepted);
+
+      return this.successHandler(res, 200, {
+        allContacts, incomingRequests, outgoingRequestsRejected, outgoingRequestsAccepted, outgoingRequestsPending,
+      });
     } catch (err) {
       return this.errorHandler(res, 400, { err });
     }
   }
-
-  // // Add new appointment to DB
-  // async addAppointment(req, res) {
-  //   const {
-  //     patientId, dateTime, department, hospital, chaperone, chaperoneId,
-  //   } = req.body;
-
-  //   try {
-  //     // Format date and time
-  //     const date = DateTime.fromISO(dateTime).toFormat('dd-MMM-yyyy');
-  //     const time = DateTime.fromISO(dateTime).toFormat('h:mm a');
-  //     // Find patient's document
-  //     const patient = await this.model.findOne({ _id: patientId });
-
-  //     if (chaperone === '') {
-  //       patient.appointments.push({
-  //         date,
-  //         time,
-  //         hospital: {
-  //           name: hospital,
-  //           department,
-  //         },
-  //       });
-  //     } else {
-  //       patient.appointments.push({
-  //         date,
-  //         time,
-  //         hospital: {
-  //           name: hospital,
-  //           department,
-  //         },
-  //         chaperone: {
-  //           chaperoneId,
-  //           name: chaperone,
-  //         },
-  //       });
-  //     }
-  //     patient.save();
-
-  //     return this.successHandler(res, 200, { data: patient.appointments });
-  //   } catch (err) {
-  //     return this.errorHandler(res, 400, { err });
-  //   }
-  // }
-
-  // // Add new patient to DB
-  // async addPatient(req, res) {
-  //   const {
-  //     userId, firstName, lastName, DOB, relationship,
-  //   } = req.body;
-
-  //   try {
-  //     const date = DateTime.fromISO(DOB).toFormat('dd-MMM-yyyy');
-
-  //     // Create new patient document
-  //     const patient = await this.model.create({
-  //       identity: {
-  //         name: {
-  //           first: firstName,
-  //           last: lastName,
-  //         },
-  //         dob: date,
-  //       },
-  //     });
-
-  //     // Add patient Id to users document
-  //     const user = await this.userModel.findOne({ _id: userId });
-  //     user.patients.push({
-  //       patientId: patient._id,
-  //       relationship,
-  //     });
-  //     user.save();
-
-  //     return this.successHandler(res, 200, { message: 'success' });
-  //   } catch (err) {
-  //     return this.errorHandler(res, 400, { err });
-  //   }
-  // }
-
-  // // Add new hospital to DB
-  // async addHospital(req, res) {
-  //   const {
-  //     hospital, patientId,
-  //   } = req.body;
-
-  //   try {
-  //     // Find patient's document
-  //     const patient = await this.model.findOne({
-  //       _id: patientId,
-  //     });
-
-  //     // Add hospital to patient's document
-  //     patient.visitDetails.clinics.push({
-  //       hospital,
-  //     });
-  //     patient.save();
-
-  //     return this.successHandler(res, 200, { message: 'success' });
-  //   } catch (err) {
-  //     return this.errorHandler(res, 400, { err });
-  //   }
-  // }
-
-  // // Add new department to DB
-  // async addDepartment(req, res) {
-  //   const {
-  //     hospital, patientId, department,
-  //   } = req.body;
-
-  //   try {
-  //     // Find patient's document
-  //     const patient = await this.model.findOne({
-  //       _id: patientId,
-  //     });
-
-  //     // Find hospital and add department
-  //     const clinicsArr = patient.visitDetails.clinics;
-  //     for (let i = 0; i < clinicsArr.length; i += 1) {
-  //       if (clinicsArr[i].hospital === hospital) {
-  //         clinicsArr[i].departments.push(department);
-  //       }
-  //     }
-  //     patient.save();
-
-  //     return this.successHandler(res, 200, { message: 'success' });
-  //   } catch (err) {
-  //     return this.errorHandler(res, 400, { err });
-  //   }
-  // }
-
-  // // Add new chaperone to DB
-  // async addChaperone(req, res) {
-  //   const {
-  //     chaperoneName,
-  //     chaperoneId,
-  //     patientId,
-  //   } = req.body;
-
-  //   try {
-  //     // Find patient's document
-  //     const patient = await this.model.findOne({
-  //       _id: patientId,
-  //     });
-
-  //     // Add chaperone to patient's document
-  //     if (chaperoneId === '') {
-  //       patient.visitDetails.chaperones.push({
-  //         name: chaperoneName,
-  //       });
-  //     } else {
-  //       patient.visitDetails.chaperones.push({
-  //         name: chaperoneName,
-  //         chaperoneId,
-  //       });
-  //     }
-  //     patient.save();
-
-  //     return this.successHandler(res, 200, { message: 'success' });
-  //   } catch (err) {
-  //     return this.errorHandler(res, 400, { err });
-  //   }
-  // }
 }
 
 module.exports = ContactsController;

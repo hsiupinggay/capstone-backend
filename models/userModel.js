@@ -36,11 +36,12 @@ const userSchema = new Schema(
       patientId: mongoose.Schema.Types.ObjectId,
       relationship: String,
     }],
-    family: [{
-      familyMemberId: mongoose.Schema.Types.ObjectId,
-      name: String,
+    contacts: [{
+      contactId: mongoose.Schema.Types.ObjectId,
+      firstName: String,
+      lastName: String,
       photo: String,
-      visibilePatients: [{
+      visiblePatients: [{
         patientId: mongoose.Schema.Types.ObjectId,
         name: String,
       }],

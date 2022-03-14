@@ -21,7 +21,7 @@ const router = express.Router();
  * ========================================================
  */
 module.exports = function contactsRouter(controller) {
-  // Get contacts and patients data related to user
+  //  Get data for all contacts related to user, outgoing and incoming requests & responses
   router.get('/load-page', controller.loadPage.bind(controller));
   return router;
 };

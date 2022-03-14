@@ -165,18 +165,18 @@ class UserController extends BaseController {
   }
 
   async authenticate(req, res) {
-    console.log(`GET Request: ${BACKEND_URL}/user/auth`);
-    console.log('<== req.headers ==>', req.headers);
+    // console.log(`GET Request: ${BACKEND_URL}/user/auth`);
+    // console.log('<== req.headers ==>', req.headers);
     try {
       const authHeader = req.headers.authorization;
-      console.log('<== authHeader ==>', authHeader);
+      // console.log('<== authHeader ==>', authHeader);
 
       const token = authHeader && authHeader.split(' ')[1];
-      console.log('<== token ==>', token);
+      // console.log('<== token ==>', token);
       if (token == null) return res.status(401).redirect('/auth');
       const verify = jwt.verify(token, JWT_SALT);
 
-      console.log('<== Token Verified ==>', verify);
+      // console.log('<== Token Verified ==>', verify);
       // send decrypted user payload to front end
       const { id, email, name } = verify;
       this.successHandler(res, 200, {
@@ -206,18 +206,18 @@ class UserController extends BaseController {
 
   // Upload or change photo
   async uploadPhoto(req, res) {
-    console.log(`POST Request: ${BACKEND_URL}/user/photo`);
+    // console.log(`POST Request: ${BACKEND_URL}/user/photo`);
 
     const photo = req.file;
     const { userId } = req.body;
-    console.log('<== photo ==>', photo);
+    // console.log('<== photo ==>', photo);
     // Store profile pic in AWS S3 and return image link for storage in DB
     try {
       const imageLink = await handleImage(req.file);
-      console.log('<== image link ==>', imageLink);
+      // console.log('<== image link ==>', imageLink);
       const user = await this.model.findOne({ _id: userId });
       user.identity.photo = imageLink;
-      console.log('<== user before save ==>', user);
+      // console.log('<== user before save ==>', user);
       await user.save();
       const userPhoto = user.identity.photo;
       this.successHandler(res, 200, {
