@@ -48,10 +48,12 @@ app.use(express.static('public'));
 // Require routers
 const userRouter = require('./routers/userRouter');
 const patientRouter = require('./routers/patientRouter');
+const contactsRouter = require('./routers/contactsRouter');
 
 // Require controllers
 const UserController = require('./controllers/userController');
 const PatientController = require('./controllers/patientController');
+const ContactsController = require('./controllers/contactsController');
 
 // Require models
 const UserModel = require('./models/userModel');
@@ -61,10 +63,12 @@ const familyRequestModel = require('./models/familyRequestModel');
 // Initialise controllers
 const userController = new UserController(UserModel);
 const patientController = new PatientController(PatientModel, UserModel);
+const contactsController = new ContactsController(UserModel, PatientModel, familyRequestModel);
 
 // Set up routes
 app.use('/user', userRouter(userController));
 app.use('/patient', patientRouter(patientController));
+app.use('/contacts', contactsRouter(contactsController));
 
 /*
  * ========================================================

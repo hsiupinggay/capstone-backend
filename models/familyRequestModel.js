@@ -35,6 +35,7 @@ const familyRequestSchema = new Schema(
       email: String,
       photo: String,
     },
+    hasAccepted: Boolean,
   },
   {
     timestamps: true,
