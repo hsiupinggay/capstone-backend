@@ -31,6 +31,7 @@ module.exports = function userRouter(controller) {
   router.put('/profile', authToken(), controller.editProfile.bind(controller));
   router.get('/authenticate', controller.authenticate.bind(controller));
   router.get('/all-family', controller.findFamily.bind(controller));
-
+  router.post('/photo', multerUpload.single('photo'), controller.uploadPhoto.bind(controller));
+  router.post('/edit', controller.editProfile.bind(controller));
   return router;
 };

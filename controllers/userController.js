@@ -13,6 +13,7 @@
  */
 const argon2 = require('argon2');
 const jwt = require('jsonwebtoken');
+const handleImage = require('../utils/photoUploader');
 const authToken = require('../middleware/authentication');
 const BaseController = require('./baseController');
 require('dotenv').config();
@@ -64,6 +65,8 @@ class UserController extends BaseController {
       password: dbPassword,
     } = user[0].identity;
     const { _id: id } = user[0];
+    // Get photo if photo field exists
+    const photo = user[0].identity?.photo;
 
     try {
       // Verify password
@@ -75,7 +78,9 @@ class UserController extends BaseController {
       // Send error status
 
       if (verify) {
-        const payload = { id, email, name };
+        const payload = {
+          id, email, name, photo,
+        };
         const token = jwt.sign(payload, JWT_SALT, { expiresIn: '10h' });
 
         this.successHandler(res, 200, {
@@ -137,9 +142,25 @@ class UserController extends BaseController {
   }
 
   async editProfile(req, res) {
-    console.log(`PUT Request: ${BACKEND_URL}/user/profile`);
+    console.log(`PUT Request: ${BACKEND_URL}/user/edit`);
+    const {
+      currentEmail, currentLastName, currentFirstName, userId,
+    } = req.body;
+    const user = await this.model.findOne({ _id: userId });
+
+    if (user.identity.email !== currentEmail) user.identity.email = currentEmail;
+    if (user.identity.name.first !== currentFirstName) user.identity.name.first = currentFirstName;
+    if (user.identity.name.last !== currentLastName) user.identity.name.last = currentLastName;
+
+    user.save();
+    const payload = {
+      userId,
+      email: user.identity.email,
+      name: user.identity.name,
+    };
     this.successHandler(res, 200, {
-      editSuccess: true,
+      success: true,
+      payload,
     });
   }
 
@@ -152,15 +173,20 @@ class UserController extends BaseController {
 
       const token = authHeader && authHeader.split(' ')[1];
       console.log('<== token ==>', token);
-      if (token == null) return res.status(401).redirect('/');
+      if (token == null) return res.status(401).redirect('/auth');
       const verify = jwt.verify(token, JWT_SALT);
 
       console.log('<== Token Verified ==>', verify);
+      // send decrypted user payload to front end
+      const { id, email, name } = verify;
       this.successHandler(res, 200, {
         verified: true,
+        id,
+        email,
+        name,
       });
     } catch (err) {
-      return res.status(403).redirect('/');
+      return res.status(403).redirect('/auth');
     }
   }
 
@@ -175,6 +201,33 @@ class UserController extends BaseController {
       return this.successHandler(res, 200, { data: familyMembers });
     } catch (err) {
       return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Upload or change photo
+  async uploadPhoto(req, res) {
+    console.log(`POST Request: ${BACKEND_URL}/user/photo`);
+
+    const photo = req.file;
+    const { userId } = req.body;
+    console.log('<== photo ==>', photo);
+    // Store profile pic in AWS S3 and return image link for storage in DB
+    try {
+      const imageLink = await handleImage(req.file);
+      console.log('<== image link ==>', imageLink);
+      const user = await this.model.findOne({ _id: userId });
+      user.identity.photo = imageLink;
+      console.log('<== user before save ==>', user);
+      await user.save();
+      const userPhoto = user.identity.photo;
+      this.successHandler(res, 200, {
+        success: true,
+        userPhoto,
+      });
+    } catch (err) {
+      this.errorHandler(res, 400, {
+        success: false,
+      });
     }
   }
 }
