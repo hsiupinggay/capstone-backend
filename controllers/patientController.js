@@ -211,6 +211,51 @@ class PatientController extends BaseController {
       return this.errorHandler(res, 400, { err });
     }
   }
+
+  async addMedicine(req, res) {
+    console.log(`POST Request: ${process.env.BACKEND_URL}/patient/add-medicine/:id`);
+
+    const {
+      patientId,
+      name,
+      dosage,
+      dosageCounter,
+      times,
+      duration,
+    } = req.body;
+
+    console.log('<== add med req body ==>', req.body);
+
+    try {
+      const patient = await this.model.findOne({ _id: patientId });
+      patient.medication.push({
+        name,
+        frequency: {
+          times,
+          perDuration: duration,
+          dosage,
+          dosageCounter,
+          timing: times,
+        },
+        lastPrescribed: {
+          prescriptionDate,
+          prescriptionQty,
+        },
+        reminder: {
+          reminderChecked,
+          daysToReminder,
+          nextPrescriptionDate,
+        },
+      });
+      patient.save();
+
+      this.successHandler(res, 200, { success: true, patient });
+    } catch (error) {
+      this.errorHandler(res, 400, {
+        sucess: false, message: 'failed to add, try again',
+      });
+    }
+  }
 }
 
 module.exports = PatientController;

@@ -186,7 +186,9 @@ class UserController extends BaseController {
         name,
       });
     } catch (err) {
-      return res.status(403).redirect('/auth');
+      return this.errorHandler(res, 401, {
+        error: 'something went wrong',
+      });
     }
   }
 
