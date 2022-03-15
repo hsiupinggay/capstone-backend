@@ -27,5 +27,11 @@ module.exports = function contactsRouter(controller) {
   router.post('/dismiss-notification', controller.removeNotification.bind(controller));
   // When user accepts/rejects request, alter DB accordings
   router.post('/handle-request', controller.handleRequest.bind(controller));
+  // When user opens add new contact popup, retrieve list of other users
+  router.get('/get-contacts', controller.getContacts.bind(controller));
+  // When user adds new contact, create contact request in DB
+  router.post('/add-contact', controller.addContact.bind(controller));
+  // When user opens contact settings, retrieve and send patient visibility
+  router.get('/get-visible-patients-list', controller.findVisiblePatients.bind(controller));
   return router;
 };

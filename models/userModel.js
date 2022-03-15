@@ -34,6 +34,7 @@ const userSchema = new Schema(
     },
     patients: [{
       patientId: mongoose.Schema.Types.ObjectId,
+      name: String,
       relationship: String,
     }],
     contacts: [{

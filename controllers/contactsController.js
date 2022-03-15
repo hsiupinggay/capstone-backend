@@ -91,7 +91,7 @@ class ContactsController extends BaseController {
         requestDoc.hasAccepted = true;
         await requestDoc.save();
 
-        // Add contact to users document
+        // Add senders contact to user's document
         const user = await this.model.findOne({ _id: userId });
         user.contacts.push({
           contactId: senderId,
@@ -100,6 +100,16 @@ class ContactsController extends BaseController {
           photo,
         });
         await user.save();
+
+        // Add users contact to sender's document
+        const sender = await this.model.findOne({ _id: senderId });
+        sender.contacts.push({
+          contactId: userId,
+          firstName: user.identity.name.first,
+          lastName: user.identity.name.last,
+          photo: user.identity.photo,
+        });
+        await sender.save();
 
         // Retrieve updated list of contacts
         const allContacts = await this.model.findOne({ _id: userId }, { contacts: 1 });
@@ -115,6 +125,136 @@ class ContactsController extends BaseController {
         const incomingRequests = await this.contactRequestModel.find({ 'recipient.recipientId': userId, hasAccepted: { $exists: false } }, { sender: 1 });
         return this.successHandler(res, 200, { incomingRequests });
       }
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // When user opens add new contact popup, retrieve list of other users
+  async getContacts(req, res) {
+    const {
+      userId,
+    } = req.query;
+
+    try {
+      // Array of userIds to exlclude
+      const excludeIds = [];
+
+      // Find all recipient userIds for requests sent by user
+      const outgoingRequests = await this.contactRequestModel.find({ 'sender.senderId': userId }, { 'recipient.recipientId': 1 });
+      outgoingRequests.forEach((request) => (excludeIds.push(request.recipient.recipientId)));
+
+      // Find all sender userIds for requests sent to user
+      const incomingRequests = await this.contactRequestModel.find({ 'recipient.recipientId': userId, hasAccepted: { $exists: false } }, { sender: 1 });
+      incomingRequests.forEach((request) => (excludeIds.push(request.sender.senderId)));
+
+      // Find all userIds of current user's existing contacts
+      const usersContacts = await this.model.findOne({ _id: userId }, { 'contacts.contactId': 1 });
+      usersContacts.contacts.forEach((contact) => (excludeIds.push(contact.contactId)));
+
+      // Exclude user's userId
+      excludeIds.push(userId);
+
+      // Find list of other users
+      const otherUsers = await this.model.find({ _id: { $nin: excludeIds } });
+
+      return this.successHandler(res, 200, { otherUsers });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // When user adds new contact, create contact request in DB
+  async addContact(req, res) {
+    const {
+      contactId,
+      contactFirstName,
+      contactLastName,
+      contactPhoto,
+      userId,
+      firstName,
+      lastName,
+      photo,
+    } = req.body;
+
+    try {
+      // Create new request in DB
+      await this.contactRequestModel.create({
+        sender: {
+          senderId: userId,
+          firstName,
+          lastName,
+          photo,
+        },
+        recipient: {
+          recipientId: contactId,
+          firstName: contactFirstName,
+          lastName: contactLastName,
+          photo: contactPhoto,
+        },
+      });
+
+      // Get updated list of users who are not contacts or have pending requests
+      // Array of userIds to exlclude
+      const excludeIds = [];
+
+      // Find all recipient userIds for requests sent by user
+      const outgoingRequests = await this.contactRequestModel.find({ 'sender.senderId': userId }, { 'recipient.recipientId': 1 });
+      outgoingRequests.forEach((request) => (excludeIds.push(request.recipient.recipientId)));
+
+      // Find all sender userIds for requests sent to user
+      const incomingRequests = await this.contactRequestModel.find({ 'recipient.recipientId': userId, hasAccepted: { $exists: false } }, { sender: 1 });
+      incomingRequests.forEach((request) => (excludeIds.push(request.sender.senderId)));
+
+      // Find all userIds of current user's existing contacts
+      const usersContacts = await this.model.findOne({ _id: userId }, { 'contacts.contactId': 1 });
+      usersContacts.contacts.forEach((contact) => (excludeIds.push(contact.contactId)));
+
+      // Exclude user's userId
+      excludeIds.push(userId);
+
+      // Find list of other users
+      const otherUsers = await this.model.find({ _id: { $nin: excludeIds } });
+
+      // Get updated list of users pending requests
+      const outgoingRequestsPending = await this.contactRequestModel.find({ 'sender.senderId': userId, hasAccepted: { $exists: false } }, { recipient: 1 });
+
+      return this.successHandler(res, 200, { otherUsers, outgoingRequestsPending });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  //  When user opens contact settings, retrieve and send patient visibility
+  async findVisiblePatients(req, res) {
+    const {
+      userId, contactId,
+    } = req.query;
+
+    try {
+      // Find contact's visibile patients
+      const contact = await this.model.findOne({ _id: userId }, { contacts: { $elemMatch: { contactId } } });
+      const { visiblePatients } = contact.contacts[0];
+      console.log('visiblePatients', visiblePatients);
+
+      // Find all other patients that user has access to
+      const excludeIds = [];
+      visiblePatients.forEach((obj) => excludeIds.push(obj.patientId));
+      console.log('excludeIds', excludeIds);
+
+      /// //// ########## TO FIX
+      const allPatients = await this.model.findOne({ _id: userId }, { patients: 1 });
+      const { patients } = allPatients;
+
+      const otherPatients = [];
+      for (let i = 0; i < patients.length; i += 1) {
+        if (excludeIds.includes(patients[i].patientId) === false) {
+          otherPatients.push(patients[i]);
+        }
+        console.log(patients[i].patientId);
+      }
+      console.log('==================otherPatients', otherPatients);
+      return this.successHandler(res, 200, { message: 'succes' });
     } catch (err) {
       return this.errorHandler(res, 400, { err });
     }
