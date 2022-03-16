@@ -1,6 +1,5 @@
-/* eslint-disable no-else-return */
-/* eslint-disable no-console */
 /* eslint-disable max-len */
+/* eslint-disable no-else-return */
 /* eslint-disable no-underscore-dangle */
 /*
  * ========================================================
@@ -49,7 +48,11 @@ class ContactsController extends BaseController {
       const outgoingRequestsAccepted = await this.contactRequestModel.find({ 'sender.senderId': userId, hasAccepted: true }, { recipient: 1 });
 
       return this.successHandler(res, 200, {
-        allContacts, incomingRequests, outgoingRequestsRejected, outgoingRequestsAccepted, outgoingRequestsPending,
+        allContacts,
+        incomingRequests,
+        outgoingRequestsRejected,
+        outgoingRequestsAccepted,
+        outgoingRequestsPending,
       });
     } catch (err) {
       return this.errorHandler(res, 400, { err });
@@ -235,26 +238,127 @@ class ContactsController extends BaseController {
       // Find contact's visibile patients
       const contact = await this.model.findOne({ _id: userId }, { contacts: { $elemMatch: { contactId } } });
       const { visiblePatients } = contact.contacts[0];
-      console.log('visiblePatients', visiblePatients);
 
-      // Find all other patients that user has access to
+      // Extract ids
       const excludeIds = [];
-      visiblePatients.forEach((obj) => excludeIds.push(obj.patientId));
-      console.log('excludeIds', excludeIds);
+      visiblePatients.forEach((obj) => excludeIds.push(obj.patientId.toString()));
 
-      /// //// ########## TO FIX
+      // Find all other patients that user is admin for
       const allPatients = await this.model.findOne({ _id: userId }, { patients: 1 });
       const { patients } = allPatients;
-
       const otherPatients = [];
       for (let i = 0; i < patients.length; i += 1) {
-        if (excludeIds.includes(patients[i].patientId) === false) {
+        if (!(excludeIds.includes(patients[i].patientId.toString()))
+        && patients[i].admin.toString() === userId.toString()) {
           otherPatients.push(patients[i]);
         }
-        console.log(patients[i].patientId);
       }
-      console.log('==================otherPatients', otherPatients);
-      return this.successHandler(res, 200, { message: 'succes' });
+
+      return this.successHandler(res, 200, { visiblePatients, otherPatients });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Remove contacts access to patients data
+  async removeAccess(req, res) {
+    const {
+      userId, contactId, patientId,
+    } = req.body;
+
+    try {
+      // Remove patient's details from user's contact subdocument
+      const user = await this.model.findOne({ _id: userId });
+      let latestVisiblePatients = [];
+      for (let i = 0; i < user.contacts.length; i += 1) {
+        // Find contact in array
+        if (user.contacts[i].contactId.toString() === contactId.toString()) {
+          // Remove patient for visiblePatients array
+          latestVisiblePatients = user.contacts[i].visiblePatients.filter((patient) => patient.patientId.toString() !== patientId.toString());
+          user.contacts[i].visiblePatients = latestVisiblePatients;
+          break;
+        }
+      }
+      await user.save();
+
+      // Remove patient's details from contact's document
+      const contactsDoc = await this.model.findOne({ _id: contactId }, { patients: 1 });
+      const patientsArr = contactsDoc.patients;
+      const updatedPatientsArr = patientsArr.filter((patient) => patient.patientId.toString() !== patientId.toString());
+      contactsDoc.patients = updatedPatientsArr;
+      await contactsDoc.save();
+
+      // Extract ids from updatedVisiblePatients
+      const excludeIds = [];
+      latestVisiblePatients.forEach((obj) => excludeIds.push(obj.patientId.toString()));
+
+      // Find all other patients that user is admin for
+      const allPatients = await this.model.findOne({ _id: userId }, { patients: 1 });
+      const { patients } = allPatients;
+      const otherPatients = [];
+      for (let i = 0; i < patients.length; i += 1) {
+        if (!(excludeIds.includes(patients[i].patientId.toString()))
+        && patients[i].admin.toString() === userId.toString()) {
+          otherPatients.push(patients[i]);
+        }
+      }
+
+      return this.successHandler(res, 200, { visiblePatients: latestVisiblePatients, otherPatients });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Give contact access to patients data
+  async giveAccess(req, res) {
+    const {
+      userId, contactId, patientId, name, admin,
+    } = req.body;
+
+    try {
+      // Add patient's details to user's contact subdocument
+      const user = await this.model.findOne({ _id: userId });
+      let latestVisiblePatients = [];
+      for (let i = 0; i < user.contacts.length; i += 1) {
+        // Find contact in array
+        if (user.contacts[i].contactId.toString() === contactId.toString()) {
+          // Add patient to visiblePatients array
+          user.contacts[i].visiblePatients.push({
+            patientId,
+            admin,
+            name,
+          });
+          latestVisiblePatients = user.contacts[i].visiblePatients;
+          break;
+        }
+      }
+      await user.save();
+
+      // Add patient's details to contacts document
+      const contactsDoc = await this.model.findOne({ _id: contactId }, { patients: 1 });
+      contactsDoc.patients.push({
+        patientId,
+        name,
+        admin,
+      });
+      await contactsDoc.save();
+
+      // Extract ids from updatedVisiblePatients
+      const excludeIds = [];
+      latestVisiblePatients.forEach((obj) => excludeIds.push(obj.patientId.toString()));
+
+      // Find all other patients that user is admin for
+      const allPatients = await this.model.findOne({ _id: userId }, { patients: 1 });
+      const { patients } = allPatients;
+      const otherPatients = [];
+      for (let i = 0; i < patients.length; i += 1) {
+        if (!(excludeIds.includes(patients[i].patientId.toString()))
+        && patients[i].admin.toString() === userId.toString()) {
+          otherPatients.push(patients[i]);
+        }
+      }
+
+      return this.successHandler(res, 200, { visiblePatients: latestVisiblePatients, otherPatients });
     } catch (err) {
       return this.errorHandler(res, 400, { err });
     }

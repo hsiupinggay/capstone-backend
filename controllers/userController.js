@@ -190,15 +190,17 @@ class UserController extends BaseController {
     }
   }
 
-  // Find family members linked to user
-  async findFamily(req, res) {
+  // Find contacts linked to user
+  async findContacts(req, res) {
     const {
       userId,
     } = req.query;
+    console.log('weeee');
     try {
       const user = await this.model.findOne({ _id: userId });
-      const familyMembers = user.family;
-      return this.successHandler(res, 200, { data: familyMembers });
+      const { contacts } = user;
+      console.log('contacts======', contacts);
+      return this.successHandler(res, 200, { data: contacts });
     } catch (err) {
       return this.errorHandler(res, 400, { err });
     }

@@ -33,5 +33,9 @@ module.exports = function contactsRouter(controller) {
   router.post('/add-contact', controller.addContact.bind(controller));
   // When user opens contact settings, retrieve and send patient visibility
   router.get('/get-visible-patients-list', controller.findVisiblePatients.bind(controller));
+  // Remove contact's access of patients data
+  router.post('/remove-access', controller.removeAccess.bind(controller));
+  // Give contact access to patients data
+  router.post('/give-access', controller.giveAccess.bind(controller));
   return router;
 };
