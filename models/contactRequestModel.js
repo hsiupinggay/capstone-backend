@@ -14,31 +14,32 @@ const mongoose = require('mongoose');
  * ========================================================
  *
  *             Schema describing structure of
- *          documents for family request collection
+ *          documents for contact request collection
  *
  * ========================================================
  * ========================================================
  */
 const { Schema } = mongoose;
 
-const familyRequestSchema = new Schema(
+const contactRequestSchema = new Schema(
   {
     sender: {
       senderId: mongoose.Schema.Types.ObjectId,
-      name: String,
-      email: String,
+      firstName: String,
+      lastName: String,
       photo: String,
     },
-    recepient: {
-      recepientId: mongoose.Schema.Types.ObjectId,
-      name: String,
-      email: String,
+    recipient: {
+      recipientId: mongoose.Schema.Types.ObjectId,
+      firstName: String,
+      lastName: String,
       photo: String,
     },
+    hasAccepted: Boolean,
   },
   {
     timestamps: true,
   },
 );
 
-module.exports = mongoose.model('family_request', familyRequestSchema, 'familyRequest');
+module.exports = mongoose.model('contact_request', contactRequestSchema, 'contactRequest');
