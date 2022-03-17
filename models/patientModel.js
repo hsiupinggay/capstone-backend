@@ -71,16 +71,16 @@ const patientSchema = new Schema(
         perDuration: String,
         dosage: Number,
         dosageCounter: String,
-        timing: String,
+        note: String,
       },
       lastPrescribed: {
         prescriptionDate: Date,
         prescriptionQty: Number,
       },
-      remainder: {
+      reminder: {
         reminderChecked: Boolean,
-        daysToReminder: Number,
-        nextPrescriptionDate: Date,
+        reminderDays: Number,
+        reminderDate: Date,
       },
     }],
     medEmailList: [{
