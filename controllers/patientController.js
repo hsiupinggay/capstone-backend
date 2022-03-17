@@ -105,6 +105,7 @@ class PatientController extends BaseController {
 
       // Create new patient document
       const patient = await this.model.create({
+        admin: userId,
         identity: {
           name: {
             first: firstName,
@@ -118,7 +119,9 @@ class PatientController extends BaseController {
       const user = await this.userModel.findOne({ _id: userId });
       user.patients.push({
         patientId: patient._id,
+        name: `${firstName} ${lastName}`,
         relationship,
+        admin: userId,
       });
       user.save();
 
