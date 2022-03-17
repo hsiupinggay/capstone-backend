@@ -1,3 +1,5 @@
+/* eslint-disable max-len */
+/* eslint-disable no-console */
 /* eslint-disable no-underscore-dangle */
 /*
  * ========================================================
@@ -8,6 +10,8 @@
  * ========================================================
  * ========================================================
  */
+const moment = require('moment');
+
 const { DateTime } = require('luxon');
 const BaseController = require('./baseController');
 
@@ -134,7 +138,7 @@ class PatientController extends BaseController {
   // Add new hospital to DB
   async addHospital(req, res) {
     const {
-      hospital, patientId,
+      hospital, patientId, getAllPatientDetails,
     } = req.body;
 
     try {
@@ -147,7 +151,17 @@ class PatientController extends BaseController {
       patient.visitDetails.clinics.push({
         hospital,
       });
-      patient.save();
+      await patient.save();
+
+      // If request comes from patient profile page instead of appointment page get and send updated list of clinics
+      if (getAllPatientDetails === true) {
+        // Get patient's details to send to frontend
+        const patientDetailsObj = await this.model.findOne({ _id: patientId }, { visitDetails: 1 });
+
+        const { visitDetails } = patientDetailsObj;
+        const { clinics } = visitDetails;
+        return this.successHandler(res, 200, { clinics });
+      }
 
       return this.successHandler(res, 200, { message: 'success' });
     } catch (err) {
@@ -158,7 +172,7 @@ class PatientController extends BaseController {
   // Add new department to DB
   async addDepartment(req, res) {
     const {
-      hospital, patientId, department,
+      hospital, patientId, department, getAllPatientDetails,
     } = req.body;
 
     try {
@@ -174,7 +188,17 @@ class PatientController extends BaseController {
           clinicsArr[i].departments.push(department);
         }
       }
-      patient.save();
+      await patient.save();
+
+      // If request comes from patient profile page instead of appointment page get and send updated list of clinics
+      if (getAllPatientDetails === true) {
+        // Get patient's details to send to frontend
+        const patientDetailsObj = await this.model.findOne({ _id: patientId }, { visitDetails: 1 });
+
+        const { visitDetails } = patientDetailsObj;
+        const { clinics } = visitDetails;
+        return this.successHandler(res, 200, { clinics });
+      }
 
       return this.successHandler(res, 200, { message: 'success' });
     } catch (err) {
@@ -188,6 +212,7 @@ class PatientController extends BaseController {
       chaperoneName,
       chaperoneId,
       patientId,
+      getAllPatientDetails,
     } = req.body;
 
     try {
@@ -207,9 +232,112 @@ class PatientController extends BaseController {
           chaperoneId,
         });
       }
-      patient.save();
+      await patient.save();
+
+      // If request comes from patient profile page instead of appointment page get and send updated list of clinics
+      if (getAllPatientDetails === true) {
+        // Get patient's details to send to frontend
+        const patientDetailsObj = await this.model.findOne({ _id: patientId }, { visitDetails: 1 });
+
+        const { visitDetails } = patientDetailsObj;
+        const { chaperones } = visitDetails;
+        return this.successHandler(res, 200, { chaperones });
+      }
 
       return this.successHandler(res, 200, { message: 'success' });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Get data for all patients names related to user
+  async allPatientsNames(req, res) {
+    const { userId } = req.query;
+
+    try {
+      // Find user's document and return patients details
+      const allPatientsObj = await this.userModel.findOne({ _id: userId }, { patients: 1 });
+      console.log('=====allPatientsObj', allPatientsObj);
+      return this.successHandler(res, 200, { allPatientsObj });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Get patient's data for patient profile page
+  async getIndividualPatientData(req, res) {
+    const { userId, patientId } = req.query;
+
+    try {
+    // Find patient in user document to extract relationship
+      const patient = await this.userModel.findOne({ _id: userId }, { patients: { $elemMatch: { patientId } } });
+      const relationship = patient.patients[0].relationship || null;
+
+      // Get patient's details to send to frontend
+      const patientDetailsObj = await this.model.findOne({ _id: patientId }, { identity: 1 });
+
+      // Get name
+      const fullName = `${patientDetailsObj.identity.name.first} ${patientDetailsObj.identity.name.last}`;
+
+      // Calcuate patient's age
+      const { dob } = patientDetailsObj.identity;
+      const date = moment(dob, 'DD-MMM-YYYY').format('MM-DD-YYYY');
+      const getAge = (dateString) => {
+        const today = new Date();
+        const birthDate = new Date(dateString);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          age -= 1;
+        }
+        return age;
+      };
+      const age = getAge(date);
+
+      return this.successHandler(res, 200, { fullName, relationship, age });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Add user's relationship to patient
+  async addRelationship(req, res) {
+    const { relationship, userId, patientId } = req.body;
+
+    try {
+    // Find user document
+      const user = await this.userModel.findOne({ _id: userId });
+
+      // Find patients subdocument
+      for (let i = 0; i < user.patients.length; i += 1) {
+        if (user.patients[i].patientId.toString() === patientId.toString()) {
+          user.patients[i].relationship = relationship;
+          user.save();
+        }
+      }
+
+      return this.successHandler(res, 200, { message: 'success' });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Get patient's visit details for patient visit details page
+  async getPatientVisitDetails(req, res) {
+    const { patientId } = req.query;
+
+    try {
+      // Get patient's details to send to frontend
+      const patientDetailsObj = await this.model.findOne({ _id: patientId }, { visitDetails: 1, identity: 1 });
+
+      const { visitDetails } = patientDetailsObj;
+      const { chaperones, clinics } = visitDetails;
+
+      console.log('chaperones', chaperones);
+      // Get name
+      const fullName = `${patientDetailsObj.identity.name.first} ${patientDetailsObj.identity.name.last}`;
+
+      return this.successHandler(res, 200, { chaperones, clinics, fullName });
     } catch (err) {
       return this.errorHandler(res, 400, { err });
     }
