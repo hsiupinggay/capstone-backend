@@ -43,7 +43,7 @@ class PatientController extends BaseController {
       }
 
       // Get patients details to send to frontend
-      const patientDetailsObj = await this.model.find({ _id: { $in: patientIdArr } }, { 'identity.name': 1, 'visitDetails.chaperones': 1, 'visitDetails.clinics': 1 });
+      const patientDetailsObj = await this.model.find({ _id: { $in: patientIdArr } }, { 'identity.name': 1, 'visitDetails.chaperones': 1, 'visitDetails.clinics': 1, 'appointments': 1, });
 
       return res.status(200).json({ patientDetailsObj });
     } catch (err) {

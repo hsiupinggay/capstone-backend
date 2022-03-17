@@ -51,7 +51,7 @@ class UserController extends BaseController {
     if (user.length === 0) {
       console.log('<== user not found ==>');
 
-      this.errorHandler(res, 400, {
+      return this.errorHandler(res, 400, {
         loginSuccess: false,
         error: 'Incorrect email or password',
       });
@@ -68,16 +68,18 @@ class UserController extends BaseController {
     try {
       // Verify password
       const verify = await argon2.verify(dbPassword, inputPassword);
-
+      console.log('<---verifying--->', verify);
       // If password is verified:
       // Sign JWT, send token with payload to FE
       // If password is incorrect:
       // Send error status
 
       if (verify) {
+        console.log('this is running')
         const payload = { id, email, name };
+        console.log('payload ', payload);
         const token = jwt.sign(payload, JWT_SALT, { expiresIn: '10h' });
-
+        console.log('payload and token here: ', token)
         this.successHandler(res, 200, {
           loginSuccess: true,
           token,
