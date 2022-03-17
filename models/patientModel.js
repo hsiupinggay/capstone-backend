@@ -23,6 +23,7 @@ const { Schema } = mongoose;
 
 const patientSchema = new Schema(
   {
+    admin: mongoose.Schema.Types.ObjectId,
     identity: {
       name: {
         first: String,

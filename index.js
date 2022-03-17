@@ -1,8 +1,9 @@
+/* eslint-disable no-console */
 /*
  * ========================================================
  * ========================================================
  *
- *                   Required modules
+ *                        Imports
  *
  * ========================================================
  * ========================================================
@@ -45,27 +46,30 @@ app.use(express.static('public'));
  * ========================================================
  * ========================================================
  */
-
 // Require routers
 const userRouter = require('./routers/userRouter');
 const patientRouter = require('./routers/patientRouter');
+const contactsRouter = require('./routers/contactsRouter');
 
 // Require controllers
 const UserController = require('./controllers/userController');
 const PatientController = require('./controllers/patientController');
+const ContactsController = require('./controllers/contactsController');
 
 // Require models
 const UserModel = require('./models/userModel');
 const PatientModel = require('./models/patientModel');
-const familyRequestModel = require('./models/familyRequestModel');
+const ContactRequestModel = require('./models/contactRequestModel');
 
 // Initialise controllers
 const userController = new UserController(UserModel);
 const patientController = new PatientController(PatientModel, UserModel);
+const contactsController = new ContactsController(UserModel, PatientModel, ContactRequestModel);
 
 // Set up routes
 app.use('/user', userRouter(userController));
 app.use('/patient', patientRouter(patientController));
+app.use('/contacts', contactsRouter(contactsController));
 
 /*
  * ========================================================

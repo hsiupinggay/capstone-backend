@@ -34,15 +34,19 @@ const userSchema = new Schema(
     },
     patients: [{
       patientId: mongoose.Schema.Types.ObjectId,
-      relationship: String,
-    }],
-    family: [{
-      familyMemberId: mongoose.Schema.Types.ObjectId,
       name: String,
+      relationship: String,
+      admin: mongoose.Schema.Types.ObjectId,
+    }],
+    contacts: [{
+      contactId: mongoose.Schema.Types.ObjectId,
+      firstName: String,
+      lastName: String,
       photo: String,
-      visibilePatients: [{
+      visiblePatients: [{
         patientId: mongoose.Schema.Types.ObjectId,
         name: String,
+        admin: mongoose.Schema.Types.ObjectId,
       }],
     }],
   },
