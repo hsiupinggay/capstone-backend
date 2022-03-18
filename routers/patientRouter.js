@@ -33,5 +33,13 @@ module.exports = function patientRouter(controller) {
   router.post('/add-department', controller.addDepartment.bind(controller));
   // Add new chaperone
   router.post('/add-chaperone', controller.addChaperone.bind(controller));
+  // Add new medicine to specific patient
+  router.post('/add-medicine', controller.addMedicine.bind(controller));
+  // View list of medicine of specific patient
+  router.get('/med-list', controller.viewMedicineList.bind(controller));
+  // View specific medicine
+  router.get('/view-med', controller.viewMedicine.bind(controller));
+  // Edit specific medicine
+  router.post('/edit-med', controller.editMedicine.bind(controller));
   return router;
 };
