@@ -47,6 +47,7 @@ app.use(express.static('public'));
  * ========================================================
  */
 // Require routers
+const { default: axios } = require('axios');
 const userRouter = require('./routers/userRouter');
 const patientRouter = require('./routers/patientRouter');
 const contactsRouter = require('./routers/contactsRouter');
@@ -71,6 +72,17 @@ app.use('/user', userRouter(userController));
 app.use('/patient', patientRouter(patientController));
 app.use('/contacts', contactsRouter(contactsController));
 
+// initiate telegram bot
+const { TELE_TOKEN, NGROK_SERVER } = process.env;
+const NGROK_URI = `/webhook/${TELE_TOKEN}`;
+const WEBHOOK_URL = NGROK_SERVER + NGROK_URI;
+const TELEGRAM_API = `https://api.telegram.org/bot${TELE_TOKEN}`;
+
+const initTelegramBot = async () => {
+  const res = await axios.get(`${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`);
+  console.log('iniTelegramBot', res.data);
+};
+
 /*
  * ========================================================
  * ========================================================
@@ -86,8 +98,11 @@ const PORT = process.env.PORT || 3004;
 // Only connect to port after connecting to db
 mongoose.connect(uri)
   .then(() => {
-    app.listen(PORT);
-    console.log(`connected to port ${PORT}`);
-    console.log('connected to db');
+    app.listen(PORT, async () => {
+      console.log(`connected to port ${PORT}`);
+      console.log('connected to db');
+      await initTelegramBot();
+      console.log('connected to telegram bot');
+    });
   })
   .catch((err) => console.log(err));
