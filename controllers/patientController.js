@@ -340,6 +340,65 @@ class PatientController extends BaseController {
       return this.successHandler(res, 200, { chaperones, clinics, fullName });
     } catch (err) {
       return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Get patient's memos and related appointments
+  async getPatientMemos(req, res) {
+    const { patientId } = req.query;
+
+    try {
+      // Get patient's details to send to frontend
+      const patientDetailsObj = await this.model.findOne({ _id: patientId }, { appointments: 1, 'identity.name': 1 }).lean();
+      const { appointments, identity } = patientDetailsObj;
+
+      // Combine patient first and last name
+      const patientName = `${identity.name.first} ${identity.name.last}`;
+
+      // Get list of all appointment dates, hospitals, departments, chaperones
+      const datesArr = [];
+      const hospArr = [];
+      const deptArr = [];
+      const chapArr = [];
+
+      // Loop through all appointments and find those with memos
+      const appointmentArr = [];
+      for (let i = 0; i < appointments.length; i += 1) {
+        if (appointments[i].notes !== undefined) {
+          // Convert and date so that they can be sorted
+          const convertedDate = moment(appointments[i].date, 'DD-MMM-YYYY').format('YYYY-MM-DD');
+          appointments[i].convertedDate = new Date(convertedDate);
+          // Push appointment into new array
+          appointmentArr.push(appointments[i]);
+
+          // Store appointment dates, hospitals, departments, chaperones in arrays for use in filters
+          datesArr.push(appointments[i].date);
+          hospArr.push(appointments[i].hospital.name);
+          deptArr.push(appointments[i].hospital.department);
+          if (appointments[i].chaperone !== undefined) {
+            chapArr.push(appointments[i].chaperone.name);
+          }
+        }
+      }
+
+      // Get list of unique appointment dates, hospitals, departments, chaperones
+      const onlyUnique = (value, index, self) => self.indexOf(value) === index;
+      const uniqueDates = datesArr.filter(onlyUnique);
+      const uniqueHosps = hospArr.filter(onlyUnique);
+      const uniqueDepts = deptArr.filter(onlyUnique);
+      const uniqueChaps = chapArr.filter(onlyUnique);
+
+      // Sort appointments/memos from latest to oldest
+      appointmentArr.sort((a, b) => b.convertedDate - a.convertedDate);
+
+      return this.successHandler(res, 200, {
+        appointmentArr, patientName, uniqueChaps, uniqueDates, uniqueDepts, uniqueHosps,
+      });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
   async addMedicine(req, res) {
     console.log(`POST Request: ${process.env.BACKEND_URL}/patient/add-medicine/`);
 
