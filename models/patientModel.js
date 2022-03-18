@@ -56,14 +56,15 @@ const patientSchema = new Schema(
         chaperoneId: mongoose.Schema.Types.ObjectId,
         name: String,
       },
-      notes: [{
+      notes: {
+        userName: {
+          first: String,
+          last: String,
+        },
         userImage: String,
-        userName: String,
-        date: Date,
-        time: String,
+        date: String,
         note: String,
-        image: String,
-      }],
+      },
     }],
     medication: [{
       name: String,
