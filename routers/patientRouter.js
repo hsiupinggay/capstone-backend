@@ -37,6 +37,8 @@ module.exports = function patientRouter(controller) {
   router.get('/all-patients-names', controller.allPatientsNames.bind(controller));
   // Get patient's data for patient profile page
   router.get('/patient-data', controller.getIndividualPatientData.bind(controller));
+  // Get patient's memos
+  router.get('/patient-memos', controller.getPatientMemos.bind(controller));
   // Add user's relationship to patient
   router.post('/add-relationship', controller.addRelationship.bind(controller));
   // Get patient's visit details for patient visit details page

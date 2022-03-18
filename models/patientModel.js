@@ -51,19 +51,23 @@ const patientSchema = new Schema(
         name: String,
         department: String,
       },
+      notes: {
+        type: {
+          userName: {
+            first: String,
+            last: String,
+          },
+          userImage: String,
+          date: String,
+          note: String,
+
+        },
+        default: undefined,
+      },
       chaperone: {
         // If not a user, then this field won't exist
         chaperoneId: mongoose.Schema.Types.ObjectId,
         name: String,
-      },
-      notes: {
-        userName: {
-          first: String,
-          last: String,
-        },
-        userImage: String,
-        date: String,
-        note: String,
       },
     }],
     medication: [{
