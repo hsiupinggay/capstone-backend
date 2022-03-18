@@ -340,6 +340,140 @@ class PatientController extends BaseController {
       return this.successHandler(res, 200, { chaperones, clinics, fullName });
     } catch (err) {
       return this.errorHandler(res, 400, { err });
+  async addMedicine(req, res) {
+    console.log(`POST Request: ${process.env.BACKEND_URL}/patient/add-medicine/`);
+
+    const {
+      patientId,
+      name,
+      dosage,
+      dosageCounter,
+      times,
+      duration,
+      note,
+      prescriptionDate,
+      prescriptionQty,
+      reminderDays,
+      reminderChecked,
+      reminderDate,
+    } = req.body;
+
+    console.log('<== add med req body ==>', req.body);
+
+    try {
+      const patient = await this.model.findOne({ _id: patientId });
+      patient.medication.push({
+        name,
+        frequency: {
+          dosage,
+          dosageCounter,
+          note,
+          times,
+          perDuration: duration,
+        },
+        lastPrescribed: {
+          prescriptionDate,
+          prescriptionQty,
+        },
+        reminder: {
+          reminderChecked,
+          reminderDays,
+          reminderDate,
+        },
+      });
+      patient.save();
+
+      this.successHandler(res, 200, { success: true, patient });
+    } catch (error) {
+      this.errorHandler(res, 400, {
+        sucess: false, message: 'failed to add, try again',
+      });
+    }
+  }
+
+  async viewMedicineList(req, res) {
+    console.log(`GET Request: ${process.env.BACKEND_URL}/patient/med-list?patientId`);
+    console.log('<== req.query ==>', req.query);
+
+    const { patientId } = req.query;
+    try {
+      const patient = await this.model.findOne({ _id: patientId });
+      const { medication } = patient;
+      this.successHandler(res, 200, { success: true, medication });
+    } catch (err) {
+      this.errorHandler(res, 400, { success: false, error: 'unable to find patient' });
+    }
+  }
+
+  async viewMedicine(req, res) {
+    console.log(`GET Request: ${process.env.BACKEND_URL}/patient/view-med?patientId?medicineId`);
+    console.log(req.query);
+    const { patientId, medicineId } = req.query;
+    const medicine = await this.model.findOne({ _id: patientId, 'medication._id': medicineId }, {
+      'medication.$': 1,
+    });
+    const selectedMedicine = medicine.medication[0];
+
+    console.log('<== medicine ==>', selectedMedicine);
+    this.successHandler(res, 200, {
+      success: true, selectedMedicine,
+    });
+  }
+
+  async editMedicine(req, res) {
+    console.log(`POST Request: ${process.env.BACKEND_URL}/patient/edit-med/`);
+    const {
+      patientId,
+      medicineId,
+      name,
+      dosage,
+      dosageCounter,
+      times,
+      duration,
+      note,
+      prescriptionDate,
+      prescriptionQty,
+      reminderDays,
+      reminderChecked,
+      reminderDate,
+    } = req.body;
+
+    console.log('<== edit med req body ==>', req.body);
+
+    try {
+      const patient = await this.model.findOne({ _id: patientId });
+      for (let i = 0; i < patient.medication.length; i += 1) {
+        console.log(
+          '<== found match ==>',
+          patient.medication[i]._id.toString() === medicineId,
+        );
+        if (patient.medication[i]._id.toString() === medicineId) {
+          patient.medication[i].name = name;
+          patient.medication[i].frequency = {
+            dosage,
+            dosageCounter,
+            note,
+            times,
+            perDuration: duration,
+          };
+          patient.medication[i].lastPrescribed = {
+            prescriptionDate,
+            prescriptionQty,
+          };
+          patient.medication[i].reminder = {
+            reminderChecked,
+            reminderDays,
+            reminderDate,
+          };
+        } else { console.log('<== medicine not found ==>'); }
+      }
+
+      patient.save();
+
+      this.successHandler(res, 200, { success: true });
+    } catch (err) {
+      console.log(err);
+      this.errorHandler(res, 400, { success: false, error: 'unable to edit' });
     }
   }
 }
