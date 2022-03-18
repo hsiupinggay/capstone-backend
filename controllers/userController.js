@@ -197,11 +197,9 @@ class UserController extends BaseController {
     const {
       userId,
     } = req.query;
-    console.log('weeee');
     try {
       const user = await this.model.findOne({ _id: userId });
       const { contacts } = user;
-      console.log('contacts======', contacts);
       return this.successHandler(res, 200, { data: contacts });
     } catch (err) {
       return this.errorHandler(res, 400, { err });

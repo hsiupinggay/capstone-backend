@@ -257,7 +257,7 @@ class PatientController extends BaseController {
     try {
       // Find user's document and return patients details
       const allPatientsObj = await this.userModel.findOne({ _id: userId }, { patients: 1 });
-      console.log('=====allPatientsObj', allPatientsObj);
+
       return this.successHandler(res, 200, { allPatientsObj });
     } catch (err) {
       return this.errorHandler(res, 400, { err });
@@ -333,7 +333,6 @@ class PatientController extends BaseController {
       const { visitDetails } = patientDetailsObj;
       const { chaperones, clinics } = visitDetails;
 
-      console.log('chaperones', chaperones);
       // Get name
       const fullName = `${patientDetailsObj.identity.name.first} ${patientDetailsObj.identity.name.last}`;
 
