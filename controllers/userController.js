@@ -178,12 +178,15 @@ class UserController extends BaseController {
 
       // console.log('<== Token Verified ==>', verify);
       // send decrypted user payload to front end
-      const { id, email, name } = verify;
+      const {
+        id, email, name, photo,
+      } = verify;
       this.successHandler(res, 200, {
         verified: true,
         id,
         email,
         name,
+        photo,
       });
     } catch (err) {
       return this.errorHandler(res, 401, {

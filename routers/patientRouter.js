@@ -51,5 +51,9 @@ module.exports = function patientRouter(controller) {
   router.get('/view-med', controller.viewMedicine.bind(controller));
   // Edit specific medicine
   router.post('/edit-med', controller.editMedicine.bind(controller));
+  // Delete specific medicine
+  router.delete('/delete', controller.deleteMedicine.bind(controller));
+
+  router.post('/test', controller.test.bind(controller));
   return router;
 };
