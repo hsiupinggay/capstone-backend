@@ -51,11 +51,13 @@ const { default: axios } = require('axios');
 const userRouter = require('./routers/userRouter');
 const patientRouter = require('./routers/patientRouter');
 const contactsRouter = require('./routers/contactsRouter');
+const messageRouter = require('./routers/messageRouter');
 
 // Require controllers
 const UserController = require('./controllers/userController');
 const PatientController = require('./controllers/patientController');
 const ContactsController = require('./controllers/contactsController');
+const MessageController = require('./controllers/messageController');
 
 // Require models
 const UserModel = require('./models/userModel');
@@ -66,22 +68,38 @@ const ContactRequestModel = require('./models/contactRequestModel');
 const userController = new UserController(UserModel);
 const patientController = new PatientController(PatientModel, UserModel);
 const contactsController = new ContactsController(UserModel, PatientModel, ContactRequestModel);
+const messageController = new MessageController(PatientModel);
 
 // Set up routes
+const { NGROK_URI } = process.env;
+
 app.use('/user', userRouter(userController));
 app.use('/patient', patientRouter(patientController));
 app.use('/contacts', contactsRouter(contactsController));
+app.use(NGROK_URI, messageRouter(messageController));
 
-// initiate telegram bot
-const { TELE_TOKEN, NGROK_SERVER } = process.env;
-const NGROK_URI = `/webhook/${TELE_TOKEN}`;
-const WEBHOOK_URL = NGROK_SERVER + NGROK_URI;
-const TELEGRAM_API = `https://api.telegram.org/bot${TELE_TOKEN}`;
+/*
+ * ========================================================
+ * ========================================================
+ *
+ *                     Telegram bot
+ *
+ * ========================================================
+ * ========================================================
+ */
+const { TELEGRAM_API, WEBHOOK_URL } = process.env;
 
+// sets webhook for telegram endpoint
 const initTelegramBot = async () => {
   const res = await axios.get(`${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`);
   console.log('iniTelegramBot', res.data);
 };
+
+// set up end point where we receive updates from telegram
+// app.post(NGROK_URI, async (req, res) => {
+//   console.log('<== telegram bot req.body ==>', req.body);
+//   res.status(200).json({ telebotRunning: true });
+// });
 
 /*
  * ========================================================
@@ -101,6 +119,7 @@ mongoose.connect(uri)
     app.listen(PORT, async () => {
       console.log(`connected to port ${PORT}`);
       console.log('connected to db');
+      // call init here so that we always set webhook when connected to port
       await initTelegramBot();
       console.log('connected to telegram bot');
     });

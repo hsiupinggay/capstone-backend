@@ -68,6 +68,7 @@ const patientSchema = new Schema(
     medication: [{
       name: String,
       frequency: {
+        asRequiredChecked: Boolean,
         times: Number,
         perDuration: String,
         dosage: Number,
@@ -82,11 +83,17 @@ const patientSchema = new Schema(
         reminderChecked: Boolean,
         reminderDays: Number,
         reminderDate: Date,
+        reminderTime: String,
+        reminderDateTime: String,
       },
     }],
     medEmailList: [{
-      name: String,
-      email: String,
+      name: {
+        type: String,
+      },
+      email: {
+        type: String,
+      },
     }],
   },
   {

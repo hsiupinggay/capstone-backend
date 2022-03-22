@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable no-underscore-dangle */
 /*
  * ========================================================
@@ -9,6 +10,8 @@
  * ========================================================
  */
 const { DateTime } = require('luxon');
+const { default: axios } = require('axios');
+const { CronJob } = require('cron');
 const BaseController = require('./baseController');
 
 /*
@@ -221,6 +224,7 @@ class PatientController extends BaseController {
     const {
       patientId,
       name,
+      asRequiredChecked,
       dosage,
       dosageCounter,
       times,
@@ -231,15 +235,31 @@ class PatientController extends BaseController {
       reminderDays,
       reminderChecked,
       reminderDate,
+      reminderTime,
     } = req.body;
-
     console.log('<== add med req body ==>', req.body);
+
+    //  reminderDateTime saved as null in db if reminderChecked is false
+    let reminderDateTime = null;
+
+    // reminderDateTime to be calculated if reminderChecked is true
+    if (reminderChecked) {
+    // reminderDate contains dateTime string with correct date
+    // reminderTime contains dateTime string with correct time
+    // reminderDateTime is the concatenation of the correct date and time
+      console.log('<== reminder checked splitting date ==>');
+      const dateSplit = reminderDate.toString().split('T');
+      const timeSplit = reminderTime.toString().split('T');
+      reminderDateTime = dateSplit[0].concat('T', timeSplit[1]);
+      console.log('<== reminderDateTime ==>', reminderDateTime);
+    }
 
     try {
       const patient = await this.model.findOne({ _id: patientId });
       patient.medication.push({
         name,
         frequency: {
+          asRequiredChecked,
           dosage,
           dosageCounter,
           note,
@@ -254,10 +274,31 @@ class PatientController extends BaseController {
           reminderChecked,
           reminderDays,
           reminderDate,
+          reminderTime,
+          reminderDateTime,
         },
       });
       patient.save();
 
+      // Function to send telegram message to all contacts in patient medEmailList
+      const sendMessage = () => {
+        patient.medEmailList.forEach(async (contact) => {
+          await axios.post(`${process.env.TELEGRAM_API}/sendMessage`, {
+            chat_id: contact.email,
+            text: `Hey @${contact.name}, remember to get a refill of ${name} for ${patient.identity.name.first}.
+            
+            The current prescription will run out in ${reminderDays} day(s).`,
+          });
+        });
+      };
+
+      // If reminderChecked is true, schedule message to be sent
+      if (reminderChecked) {
+        const messageSchedule = new Date(reminderDateTime);
+        console.log('<== messageSchedule ==>', messageSchedule);
+        const job = new CronJob(messageSchedule, sendMessage);
+        job.start();
+      }
       this.successHandler(res, 200, { success: true, patient });
     } catch (error) {
       this.errorHandler(res, 400, {
@@ -350,6 +391,38 @@ class PatientController extends BaseController {
       console.log(err);
       this.errorHandler(res, 400, { success: false, error: 'unable to edit' });
     }
+  }
+
+  async deleteMedicine(req, res) {
+    console.log(`DELETE Request: ${process.env.BACKEND_URL}/patient/delete/`);
+    console.log('<== delete route req query ==>', req.query);
+    const { medicineId, patientId } = req.query;
+    const patient = await this.model.findOne({ _id: patientId });
+    console.log('<== patient ==>', patient);
+
+    patient.medication = patient.medication.filter((medicine) => medicine._id.toString() !== medicineId);
+    console.log('<== patient.medication ==>', patient.medication);
+    patient.save();
+    this.successHandler(res, 200, { success: true });
+  }
+
+  async test(req, res) {
+    console.log('test test test');
+
+    const sendMessage = async () => {
+      await axios.post(`${process.env.TELEGRAM_API}/sendMessage`, {
+        chat_id: 154976751,
+        text: 'Hey Hsiu Ping, it\'s a beautiful day!',
+      });
+    };
+
+    const messageSchedule = new Date('March 21, 2022 10:22:30');
+    console.log('== message schedule', messageSchedule);
+    const job = new CronJob(messageSchedule, sendMessage);
+    console.log('== cron job ==', job);
+    job.start();
+    // console.log('<== send humpty dumpty ==>', message.data);
+    this.successHandler(res, 200, { success: true });
   }
 }
 
