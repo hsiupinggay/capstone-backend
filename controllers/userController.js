@@ -178,12 +178,15 @@ class UserController extends BaseController {
 
       // console.log('<== Token Verified ==>', verify);
       // send decrypted user payload to front end
-      const { id, email, name } = verify;
+      const {
+        id, email, name, photo,
+      } = verify;
       this.successHandler(res, 200, {
         verified: true,
         id,
         email,
         name,
+        photo,
       });
     } catch (err) {
       return this.errorHandler(res, 401, {
@@ -197,11 +200,9 @@ class UserController extends BaseController {
     const {
       userId,
     } = req.query;
-    console.log('weeee');
     try {
       const user = await this.model.findOne({ _id: userId });
       const { contacts } = user;
-      console.log('contacts======', contacts);
       return this.successHandler(res, 200, { data: contacts });
     } catch (err) {
       return this.errorHandler(res, 400, { err });

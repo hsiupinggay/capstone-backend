@@ -1,3 +1,5 @@
+/* eslint-disable max-len */
+/* eslint-disable no-console */
 /* eslint-disable no-underscore-dangle */
 /*
  * ========================================================
@@ -8,7 +10,11 @@
  * ========================================================
  * ========================================================
  */
+const moment = require('moment');
+
 const { DateTime } = require('luxon');
+const { default: axios } = require('axios');
+const { CronJob } = require('cron');
 const BaseController = require('./baseController');
 
 /*
@@ -134,7 +140,7 @@ class PatientController extends BaseController {
   // Add new hospital to DB
   async addHospital(req, res) {
     const {
-      hospital, patientId,
+      hospital, patientId, getAllPatientDetails,
     } = req.body;
 
     try {
@@ -147,7 +153,17 @@ class PatientController extends BaseController {
       patient.visitDetails.clinics.push({
         hospital,
       });
-      patient.save();
+      await patient.save();
+
+      // If request comes from patient profile page instead of appointment page get and send updated list of clinics
+      if (getAllPatientDetails === true) {
+        // Get patient's details to send to frontend
+        const patientDetailsObj = await this.model.findOne({ _id: patientId }, { visitDetails: 1 });
+
+        const { visitDetails } = patientDetailsObj;
+        const { clinics } = visitDetails;
+        return this.successHandler(res, 200, { clinics });
+      }
 
       return this.successHandler(res, 200, { message: 'success' });
     } catch (err) {
@@ -158,7 +174,7 @@ class PatientController extends BaseController {
   // Add new department to DB
   async addDepartment(req, res) {
     const {
-      hospital, patientId, department,
+      hospital, patientId, department, getAllPatientDetails,
     } = req.body;
 
     try {
@@ -174,7 +190,17 @@ class PatientController extends BaseController {
           clinicsArr[i].departments.push(department);
         }
       }
-      patient.save();
+      await patient.save();
+
+      // If request comes from patient profile page instead of appointment page get and send updated list of clinics
+      if (getAllPatientDetails === true) {
+        // Get patient's details to send to frontend
+        const patientDetailsObj = await this.model.findOne({ _id: patientId }, { visitDetails: 1 });
+
+        const { visitDetails } = patientDetailsObj;
+        const { clinics } = visitDetails;
+        return this.successHandler(res, 200, { clinics });
+      }
 
       return this.successHandler(res, 200, { message: 'success' });
     } catch (err) {
@@ -188,6 +214,7 @@ class PatientController extends BaseController {
       chaperoneName,
       chaperoneId,
       patientId,
+      getAllPatientDetails,
     } = req.body;
 
     try {
@@ -207,9 +234,167 @@ class PatientController extends BaseController {
           chaperoneId,
         });
       }
-      patient.save();
+      await patient.save();
+
+      // If request comes from patient profile page instead of appointment page get and send updated list of clinics
+      if (getAllPatientDetails === true) {
+        // Get patient's details to send to frontend
+        const patientDetailsObj = await this.model.findOne({ _id: patientId }, { visitDetails: 1 });
+
+        const { visitDetails } = patientDetailsObj;
+        const { chaperones } = visitDetails;
+        return this.successHandler(res, 200, { chaperones });
+      }
 
       return this.successHandler(res, 200, { message: 'success' });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Get data for all patients names related to user
+  async allPatientsNames(req, res) {
+    const { userId } = req.query;
+
+    try {
+      // Find user's document and return patients details
+      const allPatientsObj = await this.userModel.findOne({ _id: userId }, { patients: 1 });
+
+      return this.successHandler(res, 200, { allPatientsObj });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Get patient's data for patient profile page
+  async getIndividualPatientData(req, res) {
+    const { userId, patientId } = req.query;
+
+    try {
+    // Find patient in user document to extract relationship
+      const patient = await this.userModel.findOne({ _id: userId }, { patients: { $elemMatch: { patientId } } });
+      const relationship = patient.patients[0].relationship || null;
+
+      // Get patient's details to send to frontend
+      const patientDetailsObj = await this.model.findOne({ _id: patientId }, { identity: 1 });
+
+      // Get name
+      const fullName = `${patientDetailsObj.identity.name.first} ${patientDetailsObj.identity.name.last}`;
+
+      // Calcuate patient's age
+      const { dob } = patientDetailsObj.identity;
+      const date = moment(dob, 'DD-MMM-YYYY').format('MM-DD-YYYY');
+      const getAge = (dateString) => {
+        const today = new Date();
+        const birthDate = new Date(dateString);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          age -= 1;
+        }
+        return age;
+      };
+      const age = getAge(date);
+
+      return this.successHandler(res, 200, { fullName, relationship, age });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Add user's relationship to patient
+  async addRelationship(req, res) {
+    const { relationship, userId, patientId } = req.body;
+
+    try {
+    // Find user document
+      const user = await this.userModel.findOne({ _id: userId });
+
+      // Find patients subdocument
+      for (let i = 0; i < user.patients.length; i += 1) {
+        if (user.patients[i].patientId.toString() === patientId.toString()) {
+          user.patients[i].relationship = relationship;
+          user.save();
+        }
+      }
+
+      return this.successHandler(res, 200, { message: 'success' });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Get patient's visit details for patient visit details page
+  async getPatientVisitDetails(req, res) {
+    const { patientId } = req.query;
+
+    try {
+      // Get patient's details to send to frontend
+      const patientDetailsObj = await this.model.findOne({ _id: patientId }, { visitDetails: 1, identity: 1 });
+
+      const { visitDetails } = patientDetailsObj;
+      const { chaperones, clinics } = visitDetails;
+
+      // Get name
+      const fullName = `${patientDetailsObj.identity.name.first} ${patientDetailsObj.identity.name.last}`;
+
+      return this.successHandler(res, 200, { chaperones, clinics, fullName });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Get patient's memos and related appointments
+  async getPatientMemos(req, res) {
+    const { patientId } = req.query;
+
+    try {
+      // Get patient's details to send to frontend
+      const patientDetailsObj = await this.model.findOne({ _id: patientId }, { appointments: 1, 'identity.name': 1 }).lean();
+      const { appointments, identity } = patientDetailsObj;
+
+      // Combine patient first and last name
+      const patientName = `${identity.name.first} ${identity.name.last}`;
+
+      // Get list of all appointment dates, hospitals, departments, chaperones
+      const datesArr = [];
+      const hospArr = [];
+      const deptArr = [];
+      const chapArr = [];
+
+      // Loop through all appointments and find those with memos
+      const appointmentArr = [];
+      for (let i = 0; i < appointments.length; i += 1) {
+        if (appointments[i].notes !== undefined) {
+          // Convert and date so that they can be sorted
+          const convertedDate = moment(appointments[i].date, 'DD-MMM-YYYY').format('YYYY-MM-DD');
+          appointments[i].convertedDate = new Date(convertedDate);
+          // Push appointment into new array
+          appointmentArr.push(appointments[i]);
+
+          // Store appointment dates, hospitals, departments, chaperones in arrays for use in filters
+          datesArr.push(appointments[i].date);
+          hospArr.push(appointments[i].hospital.name);
+          deptArr.push(appointments[i].hospital.department);
+          if (appointments[i].chaperone !== undefined) {
+            chapArr.push(appointments[i].chaperone.name);
+          }
+        }
+      }
+
+      // Get list of unique appointment dates, hospitals, departments, chaperones
+      const onlyUnique = (value, index, self) => self.indexOf(value) === index;
+      const uniqueDates = datesArr.filter(onlyUnique);
+      const uniqueHosps = hospArr.filter(onlyUnique);
+      const uniqueDepts = deptArr.filter(onlyUnique);
+      const uniqueChaps = chapArr.filter(onlyUnique);
+
+      // Sort appointments/memos from latest to oldest
+      appointmentArr.sort((a, b) => b.convertedDate - a.convertedDate);
+
+      return this.successHandler(res, 200, {
+        appointmentArr, patientName, uniqueChaps, uniqueDates, uniqueDepts, uniqueHosps,
+      });
     } catch (err) {
       return this.errorHandler(res, 400, { err });
     }
@@ -221,6 +406,7 @@ class PatientController extends BaseController {
     const {
       patientId,
       name,
+      asRequiredChecked,
       dosage,
       dosageCounter,
       times,
@@ -231,15 +417,31 @@ class PatientController extends BaseController {
       reminderDays,
       reminderChecked,
       reminderDate,
+      reminderTime,
     } = req.body;
-
     console.log('<== add med req body ==>', req.body);
+
+    //  reminderDateTime saved as null in db if reminderChecked is false
+    let reminderDateTime = null;
+
+    // reminderDateTime to be calculated if reminderChecked is true
+    if (reminderChecked) {
+    // reminderDate contains dateTime string with correct date
+    // reminderTime contains dateTime string with correct time
+    // reminderDateTime is the concatenation of the correct date and time
+      console.log('<== reminder checked splitting date ==>');
+      const dateSplit = reminderDate.toString().split('T');
+      const timeSplit = reminderTime.toString().split('T');
+      reminderDateTime = dateSplit[0].concat('T', timeSplit[1]);
+      console.log('<== reminderDateTime ==>', reminderDateTime);
+    }
 
     try {
       const patient = await this.model.findOne({ _id: patientId });
       patient.medication.push({
         name,
         frequency: {
+          asRequiredChecked,
           dosage,
           dosageCounter,
           note,
@@ -254,10 +456,31 @@ class PatientController extends BaseController {
           reminderChecked,
           reminderDays,
           reminderDate,
+          reminderTime,
+          reminderDateTime,
         },
       });
       patient.save();
 
+      // Function to send telegram message to all contacts in patient medEmailList
+      const sendMessage = () => {
+        patient.medEmailList.forEach(async (contact) => {
+          await axios.post(`${process.env.TELEGRAM_API}/sendMessage`, {
+            chat_id: contact.email,
+            text: `Hey @${contact.name}, remember to get a refill of ${name} for ${patient.identity.name.first}.
+            
+            The current prescription will run out in ${reminderDays} day(s).`,
+          });
+        });
+      };
+
+      // If reminderChecked is true, schedule message to be sent
+      if (reminderChecked) {
+        const messageSchedule = new Date(reminderDateTime);
+        console.log('<== messageSchedule ==>', messageSchedule);
+        const job = new CronJob(messageSchedule, sendMessage);
+        job.start();
+      }
       this.successHandler(res, 200, { success: true, patient });
     } catch (error) {
       this.errorHandler(res, 400, {
@@ -350,6 +573,38 @@ class PatientController extends BaseController {
       console.log(err);
       this.errorHandler(res, 400, { success: false, error: 'unable to edit' });
     }
+  }
+
+  async deleteMedicine(req, res) {
+    console.log(`DELETE Request: ${process.env.BACKEND_URL}/patient/delete/`);
+    console.log('<== delete route req query ==>', req.query);
+    const { medicineId, patientId } = req.query;
+    const patient = await this.model.findOne({ _id: patientId });
+    console.log('<== patient ==>', patient);
+
+    patient.medication = patient.medication.filter((medicine) => medicine._id.toString() !== medicineId);
+    console.log('<== patient.medication ==>', patient.medication);
+    patient.save();
+    this.successHandler(res, 200, { success: true });
+  }
+
+  async test(req, res) {
+    console.log('test test test');
+
+    const sendMessage = async () => {
+      await axios.post(`${process.env.TELEGRAM_API}/sendMessage`, {
+        chat_id: 154976751,
+        text: 'Hey Hsiu Ping, it\'s a beautiful day!',
+      });
+    };
+
+    const messageSchedule = new Date('March 21, 2022 10:22:30');
+    console.log('== message schedule', messageSchedule);
+    const job = new CronJob(messageSchedule, sendMessage);
+    console.log('== cron job ==', job);
+    job.start();
+    // console.log('<== send humpty dumpty ==>', message.data);
+    this.successHandler(res, 200, { success: true });
   }
 }
 
