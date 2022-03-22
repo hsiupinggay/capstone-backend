@@ -16,6 +16,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const { Server } = require('socket.io');
 const { createServer } = require('http');
+const { default: axios } = require('axios');
 const initChatsSocketController = require('./controllerSocket/initChatsSocketController');
 
 /*
@@ -63,7 +64,6 @@ app.use(express.static('public'));
  * ========================================================
  */
 // Require routers
-const { default: axios } = require('axios');
 const userRouter = require('./routers/userRouter');
 const patientRouter = require('./routers/patientRouter');
 const contactsRouter = require('./routers/contactsRouter');
@@ -164,18 +164,12 @@ const PORT = process.env.PORT || 3004;
 // Only connect to port after connecting to db
 mongoose.connect(uri)
   .then(() => {
-<<<<<<< HEAD
-    app.listen(PORT, async () => {
+    httpServer.listen(PORT, async () => {
       console.log(`connected to port ${PORT}`);
       console.log('connected to db');
       // call init here so that we always set webhook when connected to port
       await initTelegramBot();
       console.log('connected to telegram bot');
     });
-=======
-    httpServer.listen(PORT);
-    console.log(`connected to port ${PORT}`);
-    console.log('connected to db');
->>>>>>> e92a825758799c0fbecf835139206a79ca9d19cc
   })
   .catch((err) => console.log(err));

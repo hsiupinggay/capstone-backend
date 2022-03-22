@@ -1,8 +1,5 @@
 /* eslint-disable max-len */
-<<<<<<< HEAD
-=======
 /* eslint-disable no-console */
->>>>>>> e92a825758799c0fbecf835139206a79ca9d19cc
 /* eslint-disable no-underscore-dangle */
 /*
  * ========================================================
