@@ -48,7 +48,9 @@ class PatientController extends BaseController {
       }
 
       // Get patients details to send to frontend
-      const patientDetailsObj = await this.model.find({ _id: { $in: patientIdArr } }, { 'identity.name': 1, 'visitDetails.chaperones': 1, 'visitDetails.clinics': 1 });
+      const patientDetailsObj = await this.model.find({ _id: { $in: patientIdArr } }, {
+        'identity.name': 1, 'visitDetails.chaperones': 1, 'visitDetails.clinics': 1, appointments: 1,
+      });
 
       return this.successHandler(res, 200, { patientDetailsObj });
     } catch (err) {
@@ -59,7 +61,7 @@ class PatientController extends BaseController {
   // Add new appointment to DB
   async addAppointment(req, res) {
     const {
-      patientId, dateTime, department, hospital, chaperone, chaperoneId,
+      userId, patientId, dateTime, department, hospital, chaperone, chaperoneId,
     } = req.body;
 
     try {
@@ -92,9 +94,24 @@ class PatientController extends BaseController {
           },
         });
       }
-      patient.save();
+      await patient.save();
 
-      return this.successHandler(res, 200, { data: patient.appointments });
+      // Find user's document and return patients details
+      const allPatientsObj = await this.userModel.findOne({ _id: userId }, { patients: 1 });
+
+      // Extract patient ids from object
+      const allPatientsArr = allPatientsObj.patients;
+      const patientIdArr = [];
+      for (let i = 0; i < allPatientsArr.length; i += 1) {
+        patientIdArr.push(allPatientsArr[i].patientId);
+      }
+
+      // Get patients details to send to frontend
+      const patientDetailsObj = await this.model.find({ _id: { $in: patientIdArr } }, {
+        'identity.name': 1, 'visitDetails.chaperones': 1, 'visitDetails.clinics': 1, appointments: 1,
+      });
+
+      return this.successHandler(res, 200, { patientDetailsObj });
     } catch (err) {
       return this.errorHandler(res, 400, { err });
     }
@@ -129,7 +146,7 @@ class PatientController extends BaseController {
         relationship,
         admin: userId,
       });
-      user.save();
+      await user.save();
 
       return this.successHandler(res, 200, { message: 'success' });
     } catch (err) {
@@ -314,9 +331,9 @@ class PatientController extends BaseController {
       for (let i = 0; i < user.patients.length; i += 1) {
         if (user.patients[i].patientId.toString() === patientId.toString()) {
           user.patients[i].relationship = relationship;
-          user.save();
         }
       }
+      await user.save();
 
       return this.successHandler(res, 200, { message: 'success' });
     } catch (err) {
@@ -460,7 +477,7 @@ class PatientController extends BaseController {
           reminderDateTime,
         },
       });
-      patient.save();
+      await patient.save();
 
       // Function to send telegram message to all contacts in patient medEmailList
       const sendMessage = () => {
@@ -566,7 +583,7 @@ class PatientController extends BaseController {
         } else { console.log('<== medicine not found ==>'); }
       }
 
-      patient.save();
+      await patient.save();
 
       this.successHandler(res, 200, { success: true });
     } catch (err) {
@@ -584,7 +601,7 @@ class PatientController extends BaseController {
 
     patient.medication = patient.medication.filter((medicine) => medicine._id.toString() !== medicineId);
     console.log('<== patient.medication ==>', patient.medication);
-    patient.save();
+    await patient.save();
     this.successHandler(res, 200, { success: true });
   }
 

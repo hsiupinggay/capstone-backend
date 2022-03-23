@@ -60,7 +60,6 @@ const patientSchema = new Schema(
           userImage: String,
           date: String,
           note: String,
-
         },
         default: undefined,
       },
