@@ -32,6 +32,53 @@ class PatientController extends BaseController {
     this.userModel = userModel;
   }
 
+  // Find upcoming appointment
+  async findNextAppt(req, res) {
+    const { userId } = req.query;
+
+    try {
+      // Find user's document and return patients details
+      const allPatientsObj = await this.userModel.findOne({ _id: userId }, { patients: 1 });
+
+      // Extract patient ids from object
+      const allPatientsArr = allPatientsObj.patients;
+      const patientIdArr = [];
+      for (let i = 0; i < allPatientsArr.length; i += 1) {
+        patientIdArr.push(allPatientsArr[i].patientId);
+      }
+
+      // Get patients details appointments
+      const appointments = await this.model.find({ _id: { $in: patientIdArr } }, { appointments: 1, identity: 1 }).lean();
+      const appointmentArr = [];
+      for (let i = 0; i < appointments.length; i += 1) {
+        const fullName = `${appointments[i].identity.name.first} ${appointments[i].identity.name.last}`;
+        for (let j = 0; j < appointments[i].appointments.length; j += 1) {
+          // Convert date so that it an be compared
+          const convertedDate = moment(appointments[i].appointments[j].date, 'DD-MMM-YYYY').format('YYYY-MM-DD');
+          appointments[i].appointments[j].convertedDate = new Date(convertedDate);
+          appointments[i].appointments[j].fullName = fullName;
+          appointmentArr.push(appointments[i].appointments[j]);
+        }
+      }
+      // Sort date
+      appointmentArr.sort((a, b) => a.convertedDate - b.convertedDate);
+
+      // Find appointment which are ucpoming
+      const now = new Date();
+      let closest = Infinity;
+      appointmentArr.forEach((d) => {
+        const date = d.convertedDate;
+        if (date >= now && (date < new Date(closest) || date < closest)) {
+          closest = d;
+        }
+      });
+
+      return this.successHandler(res, 200, { upcomingAppt: closest });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
   // Get data for all patients related to user
   async allPatientsList(req, res) {
     const { userId } = req.query;
