@@ -25,6 +25,8 @@ module.exports = function patientRouter(controller) {
   router.get('/all-patients-list', controller.allPatientsList.bind(controller));
   // Add new appointment
   router.post('/add-appointment', controller.addAppointment.bind(controller));
+  // Edit appointment
+  router.post('/edit-appointment', controller.editAppointment.bind(controller));
   // Add new patient
   router.post('/add-patient', controller.addPatient.bind(controller));
   // Add new hospital
@@ -37,6 +39,8 @@ module.exports = function patientRouter(controller) {
   router.get('/all-patients-names', controller.allPatientsNames.bind(controller));
   // Get patient's data for patient profile page
   router.get('/patient-data', controller.getIndividualPatientData.bind(controller));
+  // Add / edit appointment memo
+  router.post('/add-memo', controller.addMemo.bind(controller));
   // Get patient's memos
   router.get('/patient-memos', controller.getPatientMemos.bind(controller));
   // Add user's relationship to patient
