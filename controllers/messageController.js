@@ -57,8 +57,29 @@ class MessageController extends BaseController {
         // find patient in db to add telegram user to patient
         const patient = await this.model.findOne({ _id: patientId });
 
+        // check if user has already exists
+        const existingUser = patient.medEmailList.filter((e) => e.email === telegramUserId);
+        // get patient name for customised message to confirm subscription
+        const patientName = patient.identity.name.first;
+        console.log('<== existingUser ==>', existingUser);
+
+        // if user has already subscribed, user won't be added to db again
+        if (existingUser !== []) {
+          await axios.post(`${TELEGRAM_API}/sendMessage`, {
+            chat_id: id,
+            text: `You are already subscribed to ${patientName}'s medication refill reminders.`,
+          });
+          return;
+        }
+
+        // if user has not been subscribed, user will be added to db
         patient.medEmailList.push({ email: telegramUserId, name: userName });
         patient.save();
+
+        await axios.post(`${TELEGRAM_API}/sendMessage`, {
+          chat_id: id,
+          text: `You have been subscribed to ${patientName}'s medication refill reminders`,
+        });
       }
     }
     this.successHandler(res, 200, { telebotRunning: true });
