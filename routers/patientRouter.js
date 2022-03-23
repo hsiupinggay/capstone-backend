@@ -21,6 +21,8 @@ const router = express.Router();
  * ========================================================
  */
 module.exports = function patientRouter(controller) {
+  // Find upcoming appointment
+  router.get('/next-appointment', controller.findNextAppt.bind(controller));
   // Get list of all patient data related to user
   router.get('/all-patients-list', controller.allPatientsList.bind(controller));
   // Add new appointment
