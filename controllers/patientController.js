@@ -117,6 +117,47 @@ class PatientController extends BaseController {
     }
   }
 
+  // Edit appointment in DB
+  async editAppointment(req, res) {
+    const {
+      userId, patientId, appointmentId, date, time,
+    } = req.body;
+    try {
+      // Find patient's document
+      const patient = await this.model.findOne({ _id: patientId });
+
+      // Find appointment subdocument and update
+      for (let i = 0; i < patient.appointments.length; i += 1) {
+        if (patient.appointments[i]._id.toString() === appointmentId.toString()) {
+          if (time !== null) {
+            patient.appointments[i].time = time;
+          }
+          if (date !== null) {
+            patient.appointments[i].date = DateTime.fromISO(date).toFormat('dd-MMM-yyyy');
+          }
+        }
+      }
+      await patient.save();
+
+      // Get updated list of all appointments
+      const allPatientsObj = await this.userModel.findOne({ _id: userId }, { patients: 1 });
+      // Extract patient ids from object
+      const allPatientsArr = allPatientsObj.patients;
+      const patientIdArr = [];
+      for (let i = 0; i < allPatientsArr.length; i += 1) {
+        patientIdArr.push(allPatientsArr[i].patientId);
+      }
+      // Get patients details to send to frontend
+      const patientDetailsObj = await this.model.find({ _id: { $in: patientIdArr } }, {
+        'identity.name': 1, 'visitDetails.chaperones': 1, 'visitDetails.clinics': 1, appointments: 1,
+      });
+
+      return this.successHandler(res, 200, { patientDetailsObj });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
   // Add new patient to DB
   async addPatient(req, res) {
     const {
@@ -356,6 +397,60 @@ class PatientController extends BaseController {
       const fullName = `${patientDetailsObj.identity.name.first} ${patientDetailsObj.identity.name.last}`;
 
       return this.successHandler(res, 200, { chaperones, clinics, fullName });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Add / edit appointment memo
+  async addMemo(req, res) {
+    const {
+      userId, patientId, firstName, lastName, appointmentId, note,
+    } = req.body;
+
+    try {
+      // Find patient's document
+      const patient = await this.model.findOne({ _id: patientId });
+      const date = new Date();
+      const formattedDate = DateTime.fromISO(date.toISOString()).toFormat('dd-MMM-yyyy');
+
+      // Add or update appointment memo
+      for (let i = 0; i < patient.appointments.length; i += 1) {
+        if (patient.appointments[i]._id.toString() === appointmentId.toString()) {
+          const memoObj = {
+            userName: {
+              first: '',
+              last: '',
+            },
+            date: '',
+            note: '',
+          };
+          memoObj.userName.first = firstName;
+          memoObj.userName.last = lastName;
+          memoObj.note = note;
+          memoObj.date = formattedDate;
+          patient.appointments[i].notes = memoObj;
+        }
+      }
+      await patient.save();
+
+      // Get updated list of all appointments
+      const allPatientsObj = await this.userModel.findOne({ _id: userId }, { patients: 1 });
+      // Extract patient ids from object
+      const allPatientsArr = allPatientsObj.patients;
+      const patientIdArr = [];
+      for (let i = 0; i < allPatientsArr.length; i += 1) {
+        patientIdArr.push(allPatientsArr[i].patientId);
+      }
+      // Get patients details to send to frontend
+      const patientDetailsObj = await this.model.find({ _id: { $in: patientIdArr } }, {
+        'identity.name': 1, 'visitDetails.chaperones': 1, 'visitDetails.clinics': 1, appointments: 1,
+      });
+
+      const uploader = `${firstName} ${lastName}`;
+      return this.successHandler(res, 200, {
+        patientDetailsObj, note, formattedDate, uploader,
+      });
     } catch (err) {
       return this.errorHandler(res, 400, { err });
     }
