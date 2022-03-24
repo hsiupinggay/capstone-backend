@@ -32,6 +32,53 @@ class PatientController extends BaseController {
     this.userModel = userModel;
   }
 
+  // Find upcoming appointment
+  async findNextAppt(req, res) {
+    const { userId } = req.query;
+
+    try {
+      // Find user's document and return patients details
+      const allPatientsObj = await this.userModel.findOne({ _id: userId }, { patients: 1 });
+
+      // Extract patient ids from object
+      const allPatientsArr = allPatientsObj.patients;
+      const patientIdArr = [];
+      for (let i = 0; i < allPatientsArr.length; i += 1) {
+        patientIdArr.push(allPatientsArr[i].patientId);
+      }
+
+      // Get patients details appointments
+      const appointments = await this.model.find({ _id: { $in: patientIdArr } }, { appointments: 1, identity: 1 }).lean();
+      const appointmentArr = [];
+      for (let i = 0; i < appointments.length; i += 1) {
+        const fullName = `${appointments[i].identity.name.first} ${appointments[i].identity.name.last}`;
+        for (let j = 0; j < appointments[i].appointments.length; j += 1) {
+          // Convert date so that it an be compared
+          const convertedDate = moment(appointments[i].appointments[j].date, 'DD-MMM-YYYY').format('YYYY-MM-DD');
+          appointments[i].appointments[j].convertedDate = new Date(convertedDate);
+          appointments[i].appointments[j].fullName = fullName;
+          appointmentArr.push(appointments[i].appointments[j]);
+        }
+      }
+      // Sort date
+      appointmentArr.sort((a, b) => a.convertedDate - b.convertedDate);
+
+      // Find appointment which are ucpoming
+      const now = new Date();
+      let closest = Infinity;
+      appointmentArr.forEach((d) => {
+        const date = d.convertedDate;
+        if (date >= now && (date < new Date(closest) || date < closest)) {
+          closest = d;
+        }
+      });
+
+      return this.successHandler(res, 200, { upcomingAppt: closest });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
   // Get data for all patients related to user
   async allPatientsList(req, res) {
     const { userId } = req.query;
@@ -106,6 +153,47 @@ class PatientController extends BaseController {
         patientIdArr.push(allPatientsArr[i].patientId);
       }
 
+      // Get patients details to send to frontend
+      const patientDetailsObj = await this.model.find({ _id: { $in: patientIdArr } }, {
+        'identity.name': 1, 'visitDetails.chaperones': 1, 'visitDetails.clinics': 1, appointments: 1,
+      });
+
+      return this.successHandler(res, 200, { patientDetailsObj });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Edit appointment in DB
+  async editAppointment(req, res) {
+    const {
+      userId, patientId, appointmentId, date, time,
+    } = req.body;
+    try {
+      // Find patient's document
+      const patient = await this.model.findOne({ _id: patientId });
+
+      // Find appointment subdocument and update
+      for (let i = 0; i < patient.appointments.length; i += 1) {
+        if (patient.appointments[i]._id.toString() === appointmentId.toString()) {
+          if (time !== null) {
+            patient.appointments[i].time = time;
+          }
+          if (date !== null) {
+            patient.appointments[i].date = DateTime.fromISO(date).toFormat('dd-MMM-yyyy');
+          }
+        }
+      }
+      await patient.save();
+
+      // Get updated list of all appointments
+      const allPatientsObj = await this.userModel.findOne({ _id: userId }, { patients: 1 });
+      // Extract patient ids from object
+      const allPatientsArr = allPatientsObj.patients;
+      const patientIdArr = [];
+      for (let i = 0; i < allPatientsArr.length; i += 1) {
+        patientIdArr.push(allPatientsArr[i].patientId);
+      }
       // Get patients details to send to frontend
       const patientDetailsObj = await this.model.find({ _id: { $in: patientIdArr } }, {
         'identity.name': 1, 'visitDetails.chaperones': 1, 'visitDetails.clinics': 1, appointments: 1,
@@ -356,6 +444,60 @@ class PatientController extends BaseController {
       const fullName = `${patientDetailsObj.identity.name.first} ${patientDetailsObj.identity.name.last}`;
 
       return this.successHandler(res, 200, { chaperones, clinics, fullName });
+    } catch (err) {
+      return this.errorHandler(res, 400, { err });
+    }
+  }
+
+  // Add / edit appointment memo
+  async addMemo(req, res) {
+    const {
+      userId, patientId, firstName, lastName, appointmentId, note,
+    } = req.body;
+
+    try {
+      // Find patient's document
+      const patient = await this.model.findOne({ _id: patientId });
+      const date = new Date();
+      const formattedDate = DateTime.fromISO(date.toISOString()).toFormat('dd-MMM-yyyy');
+
+      // Add or update appointment memo
+      for (let i = 0; i < patient.appointments.length; i += 1) {
+        if (patient.appointments[i]._id.toString() === appointmentId.toString()) {
+          const memoObj = {
+            userName: {
+              first: '',
+              last: '',
+            },
+            date: '',
+            note: '',
+          };
+          memoObj.userName.first = firstName;
+          memoObj.userName.last = lastName;
+          memoObj.note = note;
+          memoObj.date = formattedDate;
+          patient.appointments[i].notes = memoObj;
+        }
+      }
+      await patient.save();
+
+      // Get updated list of all appointments
+      const allPatientsObj = await this.userModel.findOne({ _id: userId }, { patients: 1 });
+      // Extract patient ids from object
+      const allPatientsArr = allPatientsObj.patients;
+      const patientIdArr = [];
+      for (let i = 0; i < allPatientsArr.length; i += 1) {
+        patientIdArr.push(allPatientsArr[i].patientId);
+      }
+      // Get patients details to send to frontend
+      const patientDetailsObj = await this.model.find({ _id: { $in: patientIdArr } }, {
+        'identity.name': 1, 'visitDetails.chaperones': 1, 'visitDetails.clinics': 1, appointments: 1,
+      });
+
+      const uploader = `${firstName} ${lastName}`;
+      return this.successHandler(res, 200, {
+        patientDetailsObj, note, formattedDate, uploader,
+      });
     } catch (err) {
       return this.errorHandler(res, 400, { err });
     }
