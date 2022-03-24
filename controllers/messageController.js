@@ -39,12 +39,12 @@ class MessageController extends BaseController {
     console.log('<== telegram bot req.body ==>', req.body);
     const chatId = req.body.message.chat.id;
     if (req.body.message.text === '/patient') {
-      const res = await axios.post(`${TELEGRAM_API}/sendMessage`, {
+      const result = await axios.post(`${TELEGRAM_API}/sendMessage`, {
         chat_id: chatId,
         text: 'Enter the patient id string',
         reply_markup: JSON.stringify({ force_reply: true }),
       });
-      console.log('<== res patient_id ==>', res.data);
+      console.log('<== res patient_id ==>', result.data);
     }
 
     if (req.body.message.reply_to_message) {
@@ -57,28 +57,15 @@ class MessageController extends BaseController {
         // find patient in db to add telegram user to patient
         const patient = await this.model.findOne({ _id: patientId });
 
-        // check if user has already exists
-        const existingUser = patient.medEmailList.filter((e) => e.email === telegramUserId);
         // get patient name for customised message to confirm subscription
         const patientName = patient.identity.name.first;
-        console.log('<== existingUser ==>', existingUser);
 
-        // if user has already subscribed, user won't be added to db again
-        if (existingUser !== []) {
-          await axios.post(`${TELEGRAM_API}/sendMessage`, {
-            chat_id: id,
-            text: `You are already subscribed to ${patientName}'s medication refill reminders.`,
-          });
-          return;
-        }
-
-        // if user has not been subscribed, user will be added to db
         patient.medEmailList.push({ email: telegramUserId, name: userName });
         patient.save();
 
         await axios.post(`${TELEGRAM_API}/sendMessage`, {
           chat_id: id,
-          text: `You have been subscribed to ${patientName}'s medication refill reminders`,
+          text: `You are subscribed to ${patientName}'s medication refill reminders`,
         });
       }
     }
