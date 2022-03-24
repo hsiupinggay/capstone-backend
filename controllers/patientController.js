@@ -39,6 +39,12 @@ class PatientController extends BaseController {
     try {
       // Find user's document and return patients details
       const allPatientsObj = await this.userModel.findOne({ _id: userId }, { patients: 1 });
+      console.log('=====allPatientsObj=====', allPatientsObj);
+      const { patients } = allPatientsObj;
+
+      if (patients.length === 0) {
+        return this.successHandler(res, 200, { upcomingAppt: undefined });
+      }
 
       // Extract patient ids from object
       const allPatientsArr = allPatientsObj.patients;
@@ -63,6 +69,7 @@ class PatientController extends BaseController {
       // Sort date
       appointmentArr.sort((a, b) => a.convertedDate - b.convertedDate);
 
+      console.log('==========apptArr==========', appointmentArr);
       // Find appointment which are ucpoming
       const now = new Date();
       let closest = Infinity;
@@ -72,6 +79,11 @@ class PatientController extends BaseController {
           closest = d;
         }
       });
+
+      if (closest === Infinity) {
+        return this.successHandler(res, 200, { upcomingAppt: undefined });
+      }
+      console.log('==========closest==========', closest);
 
       return this.successHandler(res, 200, { upcomingAppt: closest });
     } catch (err) {
