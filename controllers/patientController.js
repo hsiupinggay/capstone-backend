@@ -627,7 +627,6 @@ class PatientController extends BaseController {
           await axios.post(`${process.env.TELEGRAM_API}/sendMessage`, {
             chat_id: contact.email,
             text: `Hey @${contact.name}, remember to get a refill of ${name} for ${patient.identity.name.first}.
-            
             The current prescription will run out in ${reminderDays} day(s).`,
           });
         });
