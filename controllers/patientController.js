@@ -464,7 +464,7 @@ class PatientController extends BaseController {
   // Add / edit appointment memo
   async addMemo(req, res) {
     const {
-      userId, patientId, firstName, lastName, appointmentId, note,
+      userId, patientId, firstName, lastName, appointmentId, note, photo,
     } = req.body;
 
     try {
@@ -481,12 +481,14 @@ class PatientController extends BaseController {
               first: '',
               last: '',
             },
+            userImage: '',
             date: '',
             note: '',
           };
           memoObj.userName.first = firstName;
           memoObj.userName.last = lastName;
           memoObj.note = note;
+          memoObj.userImage = photo;
           memoObj.date = formattedDate;
           patient.appointments[i].notes = memoObj;
         }
