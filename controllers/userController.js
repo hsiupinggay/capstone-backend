@@ -52,12 +52,13 @@ class UserController extends BaseController {
     if (user.length === 0) {
       console.log('<== user not found ==>');
 
-      this.errorHandler(res, 400, {
+      return this.errorHandler(res, 400, {
         loginSuccess: false,
         error: 'Incorrect email or password',
       });
     }
 
+    console.log('======user', user);
     // If user email found
     const {
       email,
@@ -66,7 +67,7 @@ class UserController extends BaseController {
     } = user[0].identity;
     const { _id: id } = user[0];
     // Get photo if photo field exists
-    const photo = user[0].identity?.photo;
+    const { photo } = user[0].identity;
 
     try {
       // Verify password
@@ -83,7 +84,7 @@ class UserController extends BaseController {
         };
         const token = jwt.sign(payload, JWT_SALT, { expiresIn: '10h' });
 
-        this.successHandler(res, 200, {
+        return this.successHandler(res, 200, {
           loginSuccess: true,
           token,
           payload,
@@ -131,7 +132,7 @@ class UserController extends BaseController {
 
       console.log('<== new user ==>', newUser);
     } catch (err) {
-      this.errorHandler(res, 400, {
+      return this.errorHandler(res, 400, {
         loginSuccess: false,
         error: 'Unsuccessful Signup. Please try again.',
       });
@@ -213,7 +214,6 @@ class UserController extends BaseController {
   async uploadPhoto(req, res) {
     // console.log(`POST Request: ${BACKEND_URL}/user/photo`);
 
-    const photo = req.file;
     const { userId } = req.body;
     // console.log('<== photo ==>', photo);
     // Store profile pic in AWS S3 and return image link for storage in DB
