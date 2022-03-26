@@ -23,13 +23,14 @@ const { Schema } = mongoose;
 
 const patientSchema = new Schema(
   {
+    admin: mongoose.Schema.Types.ObjectId,
     identity: {
       name: {
         first: String,
         last: String,
       },
       photo: String,
-      dob: Date,
+      dob: String,
     },
     visitDetails: {
       chaperones: [{
@@ -44,45 +45,59 @@ const patientSchema = new Schema(
       doctors: [String],
     },
     appointments: [{
-      date: Date,
+      date: String,
       time: String,
       hospital: {
         name: String,
         department: String,
+      },
+      notes: {
+        type: {
+          userName: {
+            first: String,
+            last: String,
+          },
+          userImage: String,
+          date: String,
+          note: String,
+        },
+        default: undefined,
       },
       chaperone: {
         // If not a user, then this field won't exist
         chaperoneId: mongoose.Schema.Types.ObjectId,
         name: String,
       },
-      notes: [{
-        userImage: String,
-        userName: String,
-        date: Date,
-        time: String,
-        note: String,
-        image: String,
-      }],
     }],
     medication: [{
       name: String,
       frequency: {
+        asRequiredChecked: Boolean,
         times: Number,
         perDuration: String,
-        perDosage: Number,
+        dosage: Number,
+        dosageCounter: String,
+        note: String,
       },
-      lastIssued: {
-        date: Date,
-        noOfPills: Number,
+      lastPrescribed: {
+        prescriptionDate: Date,
+        prescriptionQty: Number,
       },
-      remainder: {
-        daysBefore: Number,
-        nextIssueDate: Date,
+      reminder: {
+        reminderChecked: Boolean,
+        reminderDays: Number,
+        reminderDate: Date,
+        reminderTime: String,
+        reminderDateTime: String,
       },
     }],
     medEmailList: [{
-      name: String,
-      email: String,
+      name: {
+        type: String,
+      },
+      email: {
+        type: String,
+      },
     }],
   },
   {

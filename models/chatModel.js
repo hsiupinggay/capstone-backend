@@ -13,27 +13,25 @@ const mongoose = require('mongoose');
  * ========================================================
  * ========================================================
  *
- *             Schema describing structure of
- *          documents for family request collection
+ *              Schema describing structure of
+ *              documents for chats collection
  *
  * ========================================================
  * ========================================================
  */
 const { Schema } = mongoose;
 
-const familyRequestSchema = new Schema(
+// Initialize new instance of Schema for chats collection
+const chatSchema = new Schema(
   {
-    sender: {
-      senderId: mongoose.Schema.Types.ObjectId,
-      name: String,
-      email: String,
-      photo: String,
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
     },
-    recepient: {
-      recepientId: mongoose.Schema.Types.ObjectId,
-      name: String,
-      email: String,
-      photo: String,
+    receiverId: {
+      type: mongoose.Schema.Types.ObjectId,
+    },
+    message: {
+      type: String,
     },
   },
   {
@@ -41,4 +39,5 @@ const familyRequestSchema = new Schema(
   },
 );
 
-module.exports = mongoose.model('family_request', familyRequestSchema, 'familyRequest');
+// Create model from schema to access and alter database
+module.exports = mongoose.model('Chat', chatSchema);

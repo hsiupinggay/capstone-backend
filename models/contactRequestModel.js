@@ -14,45 +14,32 @@ const mongoose = require('mongoose');
  * ========================================================
  *
  *             Schema describing structure of
- *             documents for users collection
+ *          documents for contact request collection
  *
  * ========================================================
  * ========================================================
  */
 const { Schema } = mongoose;
 
-const userSchema = new Schema(
+const contactRequestSchema = new Schema(
   {
-    identity: {
-      name: {
-        first: String,
-        last: String,
-      },
-      email: String,
-      password: String,
-      photo: String,
-    },
-    patients: [{
-      patientId: mongoose.Schema.Types.ObjectId,
-      name: String,
-      relationship: String,
-      admin: mongoose.Schema.Types.ObjectId,
-    }],
-    contacts: [{
-      contactId: mongoose.Schema.Types.ObjectId,
+    sender: {
+      senderId: mongoose.Schema.Types.ObjectId,
       firstName: String,
       lastName: String,
       photo: String,
-      visiblePatients: [{
-        patientId: mongoose.Schema.Types.ObjectId,
-        name: String,
-        admin: mongoose.Schema.Types.ObjectId,
-      }],
-    }],
+    },
+    recipient: {
+      recipientId: mongoose.Schema.Types.ObjectId,
+      firstName: String,
+      lastName: String,
+      photo: String,
+    },
+    hasAccepted: Boolean,
   },
   {
     timestamps: true,
   },
 );
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.model('contact_request', contactRequestSchema, 'contactRequest');

@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /* eslint-disable class-methods-use-this */
 /*
  * ========================================================
@@ -14,9 +13,12 @@ class BaseController {
     this.model = model;
   }
 
-  errorHandler(err, res) {
-    console.error('Error', err);
-    res.send(err);
+  successHandler(res, status, payload) {
+    res.status(status).json(payload);
+  }
+
+  errorHandler(res, status, err) {
+    res.status(status).json(err);
   }
 }
 
