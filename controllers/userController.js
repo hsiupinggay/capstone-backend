@@ -1,6 +1,4 @@
-/* eslint-disable class-methods-use-this */
 /* eslint-disable consistent-return */
-/* eslint-disable no-console */
 /* eslint-disable no-useless-constructor */
 /*
  * ========================================================
@@ -18,7 +16,7 @@ const authToken = require('../middleware/authentication');
 const BaseController = require('./baseController');
 require('dotenv').config();
 
-const { BACKEND_URL, ARGON_SALT, JWT_SALT } = process.env;
+const { ARGON_SALT, JWT_SALT } = process.env;
 
 /*
  * ========================================================
@@ -35,8 +33,6 @@ class UserController extends BaseController {
   }
 
   async login(req, res) {
-    console.log(`POST Request: ${BACKEND_URL}/user/login`);
-
     const {
       email: inputEmail,
       password: inputPassword,
@@ -46,19 +42,14 @@ class UserController extends BaseController {
       'identity.email': inputEmail,
     }).select({ identity: 1 });
 
-    console.log('<== user ==>', user);
-
     // If user email not found, returns an empty array
     if (user.length === 0) {
-      console.log('<== user not found ==>');
-
       return this.errorHandler(res, 400, {
         loginSuccess: false,
         error: 'Incorrect email or password',
       });
     }
 
-    console.log('======user', user);
     // If user email found
     const {
       email,
@@ -104,22 +95,17 @@ class UserController extends BaseController {
   }
 
   async signup(req, res) {
-    console.log(`POST Request: ${BACKEND_URL}/user/signup`);
-
     // Get user input from body
     const {
       firstName, lastName, email, password,
     } = req.body;
 
-    console.log('<== sign up req.body ==>', req.body);
-
     try {
       // Hash password with Argon2
       const hash = await argon2.hash(password);
-      console.log('<== Ar Hashed ==>', hash);
 
       // Add user to DB
-      const newUser = await this.model.create({
+      await this.model.create({
         identity: {
           name: {
             first: firstName,
@@ -129,8 +115,6 @@ class UserController extends BaseController {
           password: hash,
         },
       });
-
-      console.log('<== new user ==>', newUser);
     } catch (err) {
       return this.errorHandler(res, 400, {
         loginSuccess: false,
@@ -143,7 +127,6 @@ class UserController extends BaseController {
   }
 
   async editProfile(req, res) {
-    console.log(`PUT Request: ${BACKEND_URL}/user/edit`);
     const {
       currentEmail, currentLastName, currentFirstName, userId,
     } = req.body;
@@ -153,7 +136,7 @@ class UserController extends BaseController {
     if (user.identity.name.first !== currentFirstName) user.identity.name.first = currentFirstName;
     if (user.identity.name.last !== currentLastName) user.identity.name.last = currentLastName;
 
-    user.save();
+    await user.save();
     const payload = {
       userId,
       email: user.identity.email,
@@ -166,19 +149,14 @@ class UserController extends BaseController {
   }
 
   async authenticate(req, res) {
-    // console.log(`GET Request: ${BACKEND_URL}/user/auth`);
-    // console.log('<== req.headers ==>', req.headers);
     try {
       const authHeader = req.headers.authorization;
-      // console.log('<== authHeader ==>', authHeader);
 
       const token = authHeader && authHeader.split(' ')[1];
-      // console.log('<== token ==>', token);
       if (token == null) return res.status(401).redirect('/auth');
       const verify = jwt.verify(token, JWT_SALT);
 
-      // console.log('<== Token Verified ==>', verify);
-      // send decrypted user payload to front end
+      // Send decrypted user payload to front end
       const {
         id, email, name, photo,
       } = verify;
@@ -212,17 +190,13 @@ class UserController extends BaseController {
 
   // Upload or change photo
   async uploadPhoto(req, res) {
-    // console.log(`POST Request: ${BACKEND_URL}/user/photo`);
-
     const { userId } = req.body;
-    // console.log('<== photo ==>', photo);
     // Store profile pic in AWS S3 and return image link for storage in DB
+
     try {
       const imageLink = await handleImage(req.file);
-      // console.log('<== image link ==>', imageLink);
       const user = await this.model.findOne({ _id: userId });
       user.identity.photo = imageLink;
-      // console.log('<== user before save ==>', user);
       await user.save();
       const userPhoto = user.identity.photo;
       this.successHandler(res, 200, {

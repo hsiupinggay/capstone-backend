@@ -1,5 +1,4 @@
 /* eslint-disable max-len */
-/* eslint-disable no-console */
 /* eslint-disable no-underscore-dangle */
 /*
  * ========================================================
@@ -11,7 +10,6 @@
  * ========================================================
  */
 const moment = require('moment');
-
 const { DateTime } = require('luxon');
 const { default: axios } = require('axios');
 const { CronJob } = require('cron');
@@ -39,7 +37,6 @@ class PatientController extends BaseController {
     try {
       // Find user's document and return patients details
       const allPatientsObj = await this.userModel.findOne({ _id: userId }, { patients: 1 });
-      console.log('=====allPatientsObj=====', allPatientsObj);
       const { patients } = allPatientsObj;
 
       if (patients.length === 0) {
@@ -66,10 +63,10 @@ class PatientController extends BaseController {
           appointmentArr.push(appointments[i].appointments[j]);
         }
       }
+
       // Sort date
       appointmentArr.sort((a, b) => a.convertedDate - b.convertedDate);
 
-      console.log('==========apptArr==========', appointmentArr);
       // Find appointment which are ucpoming
       const now = new Date();
       let closest = Infinity;
@@ -83,7 +80,6 @@ class PatientController extends BaseController {
       if (closest === Infinity) {
         return this.successHandler(res, 200, { upcomingAppt: undefined });
       }
-      console.log('==========closest==========', closest);
 
       return this.successHandler(res, 200, { upcomingAppt: closest });
     } catch (err) {
@@ -574,8 +570,6 @@ class PatientController extends BaseController {
   }
 
   async addMedicine(req, res) {
-    console.log(`POST Request: ${process.env.BACKEND_URL}/patient/add-medicine/`);
-
     const {
       patientId,
       name,
@@ -592,21 +586,18 @@ class PatientController extends BaseController {
       reminderDate,
       reminderTime,
     } = req.body;
-    console.log('<== add med req body ==>', req.body);
 
     //  reminderDateTime saved as null in db if reminderChecked is false
     let reminderDateTime = null;
 
     // reminderDateTime to be calculated if reminderChecked is true
-    if (reminderChecked) {
     // reminderDate contains dateTime string with correct date
     // reminderTime contains dateTime string with correct time
     // reminderDateTime is the concatenation of the correct date and time
-      console.log('<== reminder checked splitting date ==>');
+    if (reminderChecked) {
       const dateSplit = reminderDate.toString().split('T');
       const timeSplit = reminderTime.toString().split('T');
       reminderDateTime = dateSplit[0].concat('T', timeSplit[1]);
-      console.log('<== reminderDateTime ==>', reminderDateTime);
     }
 
     try {
@@ -649,7 +640,6 @@ class PatientController extends BaseController {
       // If reminderChecked is true, schedule message to be sent
       if (reminderChecked) {
         const messageSchedule = new Date(reminderDateTime);
-        console.log('<== messageSchedule ==>', messageSchedule);
         const job = new CronJob(messageSchedule, sendMessage);
         job.start();
       }
@@ -662,10 +652,8 @@ class PatientController extends BaseController {
   }
 
   async viewMedicineList(req, res) {
-    console.log(`GET Request: ${process.env.BACKEND_URL}/patient/med-list?patientId`);
-    console.log('<== req.query ==>', req.query);
-
     const { patientId } = req.query;
+
     try {
       const patient = await this.model.findOne({ _id: patientId });
       const { medication } = patient;
@@ -676,22 +664,18 @@ class PatientController extends BaseController {
   }
 
   async viewMedicine(req, res) {
-    console.log(`GET Request: ${process.env.BACKEND_URL}/patient/view-med?patientId?medicineId`);
-    console.log(req.query);
     const { patientId, medicineId } = req.query;
     const medicine = await this.model.findOne({ _id: patientId, 'medication._id': medicineId }, {
       'medication.$': 1,
     });
     const selectedMedicine = medicine.medication[0];
 
-    console.log('<== medicine ==>', selectedMedicine);
     this.successHandler(res, 200, {
       success: true, selectedMedicine,
     });
   }
 
   async editMedicine(req, res) {
-    console.log(`POST Request: ${process.env.BACKEND_URL}/patient/edit-med/`);
     const {
       patientId,
       medicineId,
@@ -708,15 +692,9 @@ class PatientController extends BaseController {
       reminderDate,
     } = req.body;
 
-    console.log('<== edit med req body ==>', req.body);
-
     try {
       const patient = await this.model.findOne({ _id: patientId });
       for (let i = 0; i < patient.medication.length; i += 1) {
-        console.log(
-          '<== found match ==>',
-          patient.medication[i]._id.toString() === medicineId,
-        );
         if (patient.medication[i]._id.toString() === medicineId) {
           patient.medication[i].name = name;
           patient.medication[i].frequency = {
@@ -735,34 +713,27 @@ class PatientController extends BaseController {
             reminderDays,
             reminderDate,
           };
-        } else { console.log('<== medicine not found ==>'); }
+        }
       }
 
       await patient.save();
 
       this.successHandler(res, 200, { success: true });
     } catch (err) {
-      console.log(err);
       this.errorHandler(res, 400, { success: false, error: 'unable to edit' });
     }
   }
 
   async deleteMedicine(req, res) {
-    console.log(`DELETE Request: ${process.env.BACKEND_URL}/patient/delete/`);
-    console.log('<== delete route req query ==>', req.query);
     const { medicineId, patientId } = req.query;
     const patient = await this.model.findOne({ _id: patientId });
-    console.log('<== patient ==>', patient);
 
     patient.medication = patient.medication.filter((medicine) => medicine._id.toString() !== medicineId);
-    console.log('<== patient.medication ==>', patient.medication);
     await patient.save();
     this.successHandler(res, 200, { success: true });
   }
 
   async test(req, res) {
-    console.log('test test test');
-
     const sendMessage = async () => {
       await axios.post(`${process.env.TELEGRAM_API}/sendMessage`, {
         chat_id: 154976751,
@@ -771,11 +742,8 @@ class PatientController extends BaseController {
     };
 
     const messageSchedule = new Date('March 21, 2022 10:22:30');
-    console.log('== message schedule', messageSchedule);
     const job = new CronJob(messageSchedule, sendMessage);
-    console.log('== cron job ==', job);
     job.start();
-    // console.log('<== send humpty dumpty ==>', message.data);
     this.successHandler(res, 200, { success: true });
   }
 }
