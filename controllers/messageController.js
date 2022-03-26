@@ -11,6 +11,7 @@ const { default: axios } = require('axios');
 const BaseController = require('./baseController');
 
 const { TELEGRAM_API } = process.env;
+
 /*
  * ========================================================
  * ========================================================
@@ -26,14 +27,6 @@ class MessageController extends BaseController {
     super(model);
     this.userModel = userModel;
   }
-
-  // async sendMessage(req, res) {
-  //   // await axios.post(`${TELEGRAM_API}/sendMessage`, {
-  //   //   chat_id=
-
-  //   // });
-  //   this.successHandler(res, 200, { sendMessage: true });
-  // }
 
   async getMessage(req, res) {
     console.log('<== telegram bot req.body ==>', req.body);
@@ -61,7 +54,7 @@ class MessageController extends BaseController {
         const patientName = patient.identity.name.first;
 
         patient.medEmailList.push({ email: telegramUserId, name: userName });
-        patient.save();
+        await patient.save();
 
         await axios.post(`${TELEGRAM_API}/sendMessage`, {
           chat_id: id,
@@ -72,4 +65,5 @@ class MessageController extends BaseController {
     this.successHandler(res, 200, { telebotRunning: true });
   }
 }
+
 module.exports = MessageController;
