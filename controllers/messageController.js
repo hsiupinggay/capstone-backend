@@ -29,15 +29,13 @@ class MessageController extends BaseController {
   }
 
   async getMessage(req, res) {
-    console.log('<== telegram bot req.body ==>', req.body);
     const chatId = req.body.message.chat.id;
     if (req.body.message.text === '/patient') {
-      const result = await axios.post(`${TELEGRAM_API}/sendMessage`, {
+      await axios.post(`${TELEGRAM_API}/sendMessage`, {
         chat_id: chatId,
         text: 'Enter the patient id string',
         reply_markup: JSON.stringify({ force_reply: true }),
       });
-      console.log('<== res patient_id ==>', result.data);
     }
 
     if (req.body.message.reply_to_message) {
