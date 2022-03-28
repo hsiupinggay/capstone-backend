@@ -104,20 +104,13 @@ app.use(NGROK_URI, messageRouter(messageController));
  * ========================================================
  */
 const { TELEGRAM_API, BACKEND_URL } = process.env;
-// const WEBHOOK_URL = FRONTEND_URL.concat(NGROK_URI);
+
 const WEBHOOK_URL = BACKEND_URL.concat(NGROK_URI);
 
 // sets webhook for telegram endpoint
 const initTelegramBot = async () => {
-  const res = await axios.get(`${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`);
-  console.log('iniTelegramBot', res.data);
+  await axios.get(`${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`);
 };
-
-// set up end point where we receive updates from telegram
-// app.post(NGROK_URI, async (req, res) => {
-//   console.log('<== telegram bot req.body ==>', req.body);
-//   res.status(200).json({ telebotRunning: true });
-// });
 
 /*
  * ========================================================
