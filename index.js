@@ -87,12 +87,12 @@ const contactsController = new ContactsController(UserModel, PatientModel, Conta
 const messageController = new MessageController(PatientModel);
 
 // Set up routes
-const { NGROK_URI } = process.env;
+const { URI } = process.env;
 
 app.use('/user', userRouter(userController));
 app.use('/patient', patientRouter(patientController));
 app.use('/contacts', contactsRouter(contactsController));
-app.use(NGROK_URI, messageRouter(messageController));
+app.use(URI, messageRouter(messageController));
 
 /*
  * ========================================================
@@ -105,7 +105,7 @@ app.use(NGROK_URI, messageRouter(messageController));
  */
 const { TELEGRAM_API, BACKEND_URL } = process.env;
 
-const WEBHOOK_URL = BACKEND_URL.concat(NGROK_URI);
+const WEBHOOK_URL = BACKEND_URL.concat(URI);
 
 // sets webhook for telegram endpoint
 const initTelegramBot = async () => {
