@@ -103,9 +103,9 @@ app.use(NGROK_URI, messageRouter(messageController));
  * ========================================================
  * ========================================================
  */
-const { TELEGRAM_API, TELE_TOKEN } = process.env;
+const { TELEGRAM_API, BACKEND_URL } = process.env;
 // const WEBHOOK_URL = FRONTEND_URL.concat(NGROK_URI);
-const WEBHOOK_URL = FRONTEND_URL.concat(`/${TELE_TOKEN}`);
+const WEBHOOK_URL = BACKEND_URL.concat(NGROK_URI);
 
 // sets webhook for telegram endpoint
 const initTelegramBot = async () => {
