@@ -12,11 +12,10 @@
 const argon2 = require('argon2');
 const jwt = require('jsonwebtoken');
 const handleImage = require('../utils/photoUploader');
-const authToken = require('../middleware/authentication');
 const BaseController = require('./baseController');
 require('dotenv').config();
 
-const { ARGON_SALT, JWT_SALT } = process.env;
+const { JWT_SALT } = process.env;
 
 /*
  * ========================================================
@@ -101,6 +100,20 @@ class UserController extends BaseController {
     } = req.body;
 
     try {
+      // check if user already in db
+
+      const existingUser = await this.model.find({
+        'identity.email': email,
+      }).select({ identity: 1 });
+
+      // If user email not found, returns an empty array
+      if (existingUser.length !== 0) {
+        return this.errorHandler(res, 400, {
+          signupSuccess: false,
+          error: 'User already exists',
+        });
+      }
+
       // Hash password with Argon2
       const hash = await argon2.hash(password);
 
@@ -117,7 +130,7 @@ class UserController extends BaseController {
       });
     } catch (err) {
       return this.errorHandler(res, 400, {
-        loginSuccess: false,
+        signupSuccess: false,
         error: 'Unsuccessful Signup. Please try again.',
       });
     }
