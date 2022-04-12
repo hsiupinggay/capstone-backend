@@ -30,7 +30,11 @@ class MessageController extends BaseController {
 
   async getMessage(req, res) {
     if (!req.body.message) {
-      this.errorHandler(res, 400, { error: 'oops, something went wrong' });
+      return {
+        errors: {
+          406: 'NOT_ACCEPTABLE',
+        },
+      };
     }
 
     try {
@@ -66,7 +70,11 @@ class MessageController extends BaseController {
         }
       }
     } catch (err) {
-      return this.errorHandler(res, 400, { err });
+      return {
+        errors: {
+          406: 'NOT_ACCEPTABLE',
+        },
+      };
     }
     return this.successHandler(res, 200, { telebotRunning: true });
   }
