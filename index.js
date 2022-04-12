@@ -163,8 +163,8 @@ mongoose.connect(uri)
       console.log(`connected to port ${PORT}`);
       console.log('connected to db');
       // call init here so that we always set webhook when connected to port
-      // await initTelegramBot();
-      // console.log('connected to telegram bot');
+      await initTelegramBot();
+      console.log('connected to telegram bot');
     });
   })
   .catch((err) => console.log(err));
