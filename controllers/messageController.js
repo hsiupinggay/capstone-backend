@@ -29,6 +29,7 @@ class MessageController extends BaseController {
   }
 
   async getMessage(req, res) {
+    console.log('req.body', req.body);
     const chatId = req.body.message.chat.id;
     if (req.body.message.text === '/patient') {
       await axios.post(`${TELEGRAM_API}/sendMessage`, {
